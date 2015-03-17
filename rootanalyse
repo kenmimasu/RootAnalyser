@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+################################################################################
+import time,os,sys,argparse
+import StringIO
+import ROOT
+################################################################################
+class ParserError(Exception):
+    def __init__(self, message, parser):
+        # Call the base class constructor with the parameters it needs
+        super(Exception, self).__init__(message)
+        self.message = message
+        self.parser = parser
+    def __str__(self):
+        rep = StringIO.StringIO()
+        print >>  rep, self.message
+        print >>  rep, ''
+        print >>  rep, self.parser.format_help()
+        return rep.getvalue()
+################################################################################
+supported_trees= {'LHCO','LHEF'}
+################################################################################
+parser = argparse.ArgumentParser(description="Analyse an event file in LHCO or LHEF format using your TPySelector.")
+parser.add_argument("rootfile", metavar="ROOTFILE", type=str,  help="Path to input root file.")
+parser.add_argument("selector", metavar="SELECTOR", type=str,  help="Path to user's TPySelector implementation without the '.py' extension")
+parser.add_argument("-e","--exroot", metavar="EXROOT", type=str, default=argparse.SUPPRESS, help="Location of libExRootAnalysis.so")
+parser.add_argument("-t","--tree", metavar="TREE", type=str, default=argparse.SUPPRESS, help="Name of TTree to analyse (one of: {})".format(', '.join(supported_trees)))
+################################################################################
+args = parser.parse_args()
+try: # catch all instances of ParserError raised
+
+    # Load ExRootAnalysis library (minimally prevents warning appearing)
+    try:
+        exrootdir = args.exroot
+    except AttributeError:
+        try:
+            exrootdir = os.environ['EXROOTANALYSIS']
+            if not exrootdir: raise KeyError
+        except KeyError:
+            raise ParserError('Location of libExRootAnalysis.so unscpecified, use "-e" option or define an environment variable "EXROOTANALYSIS".',parser)
+    libexroot = '{}/libExRootAnalysis.so'.format(exrootdir)
+    if not os.path.exists(libexroot): raise ParserError('Could not find "libExRootAnalysis.so" in {}'.format(exrootdir),parser)
+    print 'Found libExRootAnalysis.so in {}'.format(exrootdir)
+    ROOT.gSystem.Load(libexroot)
+
+    # Get list of keys in file
+    myfile = ROOT.TFile.Open(args.rootfile,'READ')
+    keys = []
+    for f in myfile.GetListOfKeys():
+        keys.append(f.GetName())
+    myfile.Close()
+
+    try:# See if specified tree name is set of supported trees
+        assert args.tree in keys            
+    except AttributeError: # See if supported tree name is in list of keys
+        trees = supported_trees.intersection(set(keys))
+        if len(trees)==1: 
+            treename = list(trees)[0]
+        else:
+            raise ParserError('''More than one of the supported tree structures exists in {}. Please specify which one to read using the "-t" option.'''.format(args.rootfile),parser)
+    except AssertionError:
+        raise ParserError('TREE option -t "{}" not supported.'.format(args.tree),parser)
+        
+except ParserError as err:
+    print ''
+    print 'ParserError:'
+    print ''
+    print err
+    sys.exit()
+    
+print ''
+print 'Analysing {} with selector {}.py'.format(args.rootfile, args.selector)
+print 'Reading tree: {}'.format(treename)
+print ''
+# Process tree
+new_chain = ROOT.TChain(treename) 
+new_chain.Add(args.rootfile)
+start = time.time() # Timer
+print 'Begin analysis'
+new_chain.Process('TPySelector',args.selector) # selector file name without '.py'
+print 'Completed in {} seconds'.format((time.time() - start))
+print ''
+
