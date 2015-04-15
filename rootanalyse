@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 ################################################################################
+from RootAnalyser import exroot_dir as RA_exrootdir
 import time,os,sys,argparse
 import StringIO
 import ROOT
@@ -26,17 +27,18 @@ parser.add_argument("-e","--exroot", metavar="EXROOT", type=str, default=argpars
 parser.add_argument("-t","--tree", metavar="TREE", type=str, default=argparse.SUPPRESS, help="Name of TTree to analyse (one of: {})".format(', '.join(supported_trees)))
 ################################################################################
 args = parser.parse_args()
-try: # catch all instances of ParserError raised
-
-    # Load ExRootAnalysis library (minimally prevents warning appearing)
+try: # catch all ParserErrors raised
+    # Load ExRootAnalysis library
     try:
         exrootdir = args.exroot
     except AttributeError:
         try:
             exrootdir = os.environ['EXROOTANALYSIS']
-            if not exrootdir: raise KeyError
+            if not exrootdir:
+                exrootdir = RA_exrootdir
+                print 'Using default location for libExRootAnalysis.so: {}'.format(exrootdir)
         except KeyError:
-            raise ParserError('Location of libExRootAnalysis.so unscpecified, use "-e" option or define an environment variable "EXROOTANALYSIS".',parser)
+            raise ParserError('Location of libExRootAnalysis.so unspecified, use "-e" option, define an environment variable "EXROOTANALYSIS" or set exroot_dir in __init__.py of RootAnalyser package.',parser)
     libexroot = '{}/libExRootAnalysis.so'.format(exrootdir)
     if not os.path.exists(libexroot): raise ParserError('Could not find "libExRootAnalysis.so" in {}'.format(exrootdir),parser)
     print 'Found libExRootAnalysis.so in {}'.format(exrootdir)
@@ -50,7 +52,8 @@ try: # catch all instances of ParserError raised
     myfile.Close()
 
     try:# See if specified tree name is set of supported trees
-        assert args.tree in keys            
+        assert args.tree in keys
+        treename = args.tree       
     except AttributeError: # See if supported tree name is in list of keys
         trees = supported_trees.intersection(set(keys))
         if len(trees)==1: 

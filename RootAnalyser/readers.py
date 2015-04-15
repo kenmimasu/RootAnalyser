@@ -32,9 +32,14 @@ def _read_LHCO(tree, acceptance=None):
        returning an Event instance'''
     acc = acceptance if acceptance is not None else default_acceptance
     evt = Event() # initialise
-    # MET
-    evt.MET = tree.MissingET[0].MET
-    evt.MET_phi = tree.MissingET[0].Phi
+    # MET (Sometimes LHCO tree has no attribute MissingET)
+    try:
+        evt.MET = tree.MissingET[0].MET
+        evt.MET_phi = tree.MissingET[0].Phi
+    except AttributeError:
+        evt.MET = 0.
+        evt.MET_phi=0.
+        
     if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
     # Photons
     for i in xrange(tree.Photon_size):
