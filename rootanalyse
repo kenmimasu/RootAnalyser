@@ -25,8 +25,23 @@ parser.add_argument("rootfile", metavar="ROOTFILE", type=str,  help="Path to inp
 parser.add_argument("selector", metavar="SELECTOR", type=str,  help="Path to user's TPySelector implementation without the '.py' extension")
 parser.add_argument("-e","--exroot", metavar="EXROOT", type=str, default=argparse.SUPPRESS, help="Location of libExRootAnalysis.so")
 parser.add_argument("-t","--tree", metavar="TREE", type=str, default=argparse.SUPPRESS, help="Name of TTree to analyse (one of: {})".format(', '.join(supported_trees)))
+parser.add_argument("-o","--options", metavar="OPT", type=str, default="", help="Option string to feed into the analysis' Process() method")
 ################################################################################
 args = parser.parse_args()
+################################################################################
+error_e_option='''
+Location of libExRootAnalysis.so unspecified. use "-e" option, define an 
+environment variable "EXROOTANALYSIS" or set exroot_dir in __init__.py of the 
+RootAnalyser package.
+'''
+error_multitree='''
+More than one of the supported tree structures exists in {}. 
+Please specify which one to read using the "-t" option.
+'''.format(args.rootfile)
+error_supported_trees = '''
+TREE option -t "{}" not supported.
+'''.format(args.tree)
+################################################################################
 try: # catch all ParserErrors raised
     # Load ExRootAnalysis library
     try:
@@ -34,11 +49,12 @@ try: # catch all ParserErrors raised
     except AttributeError:
         try:
             exrootdir = os.environ['EXROOTANALYSIS']
-            if not exrootdir:
-                exrootdir = RA_exrootdir
-                print 'Using default location for libExRootAnalysis.so: {}'.format(exrootdir)
+            if not exrootdir: raise KeyError
         except KeyError:
-            raise ParserError('Location of libExRootAnalysis.so unspecified, use "-e" option, define an environment variable "EXROOTANALYSIS" or set exroot_dir in __init__.py of RootAnalyser package.',parser)
+            exrootdir = RA_exrootdir
+            print 'Trying default location for libExRootAnalysis.so: {}'.format(exrootdir)
+            if not os.path.exists(exrootdir):
+                raise ParserError(error_e_option,parser)
     libexroot = '{}/libExRootAnalysis.so'.format(exrootdir)
     if not os.path.exists(libexroot): raise ParserError('Could not find "libExRootAnalysis.so" in {}'.format(exrootdir),parser)
     print 'Found libExRootAnalysis.so in {}'.format(exrootdir)
@@ -59,19 +75,21 @@ try: # catch all ParserErrors raised
         if len(trees)==1: 
             treename = list(trees)[0]
         else:
-            raise ParserError('''More than one of the supported tree structures exists in {}. Please specify which one to read using the "-t" option.'''.format(args.rootfile),parser)
+            raise ParserError(error_multitree,parser)
     except AssertionError:
-        raise ParserError('TREE option -t "{}" not supported.'.format(args.tree),parser)
-        
+        raise ParserError(error_supported_trees,parser)
+            
 except ParserError as err:
     print ''
     print 'ParserError:'
     print ''
     print err
     sys.exit()
-    
+
+################################################################################
+selector = args.selector.replace('.py','')
 print ''
-print 'Analysing {} with selector {}.py'.format(args.rootfile, args.selector)
+print 'Analysing {} with selector {}.py'.format(args.rootfile, selector)
 print 'Reading tree: {}'.format(treename)
 print ''
 # Process tree
@@ -79,7 +97,7 @@ new_chain = ROOT.TChain(treename)
 new_chain.Add(args.rootfile)
 start = time.time() # Timer
 print 'Begin analysis'
-new_chain.Process('TPySelector',args.selector) # selector file name without '.py'
+new_chain.Process('TPySelector', selector) # selector file name without '.py'
 print 'Completed in {} seconds'.format((time.time() - start))
 print ''
 
