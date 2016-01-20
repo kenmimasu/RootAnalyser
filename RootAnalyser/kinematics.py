@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 from operator import attrgetter
 ####################################################################################################
 # Useful functions  
@@ -12,7 +13,7 @@ def ee_sort(particle_list):
     return sorted(particle_list, key=attrgetter('ee'),reverse=True)
     
 def pdot(part1,part2):
-    '''Returns the scalar product of the 4-momenta of two particles'''
+    '''Returns the scalar product of the 3-momenta of two particles'''
     return part1.px*part2.px+part1.py*part2.py+part1.pz*part2.pz
 
 def fourmom(*particles):
@@ -45,6 +46,10 @@ def pT(*particles):# pT(part1,part2,...)
         px += p.px; py += p.py
     return np.sqrt(px**2 + py**2) 
 
+def HT(*particles):# HT(part1,part2,...)
+    '''Takes a list of particles and returns the HT (scalar sum of pTs) of the system'''
+    return sum([p.pt for p in particles])  
+    
 def phi(*particles):# phi(part1,part2,...)
     '''Takes a list of particles and returns the azimuthal angle of the 3-momentum of the system'''
     px, py = 0.,0.
@@ -59,10 +64,12 @@ def dphi(*args,**kwargs):# dphi(part1,part2,...,ref_phi=XXX)
     phi_tot = phi(*args)
     dphi = abs(phi_tot-ref_phi)
     return dphi if dphi < np.pi else 2.*np.pi-dphi
-    
-def HT(*particles):# HT(part1,part2,...)
-    '''Takes a list of particles and returns the HT (scalar sum of pTs) of the system'''
-    return sum([p.pt for p in particles])  
+
+def dtheta(part1,part2,degrees=False):
+    '''Returns the opening angle between two particles' 3-momenta'''
+    costheta = pdot(part1,part2)/part1.modp/part2.modp
+    theta = np.arccos(costheta)
+    return theta*180./np.pi if degrees else theta
     
 def deltaR(part1,part2):
     '''Returns the spatial separation dR = sqrt(dEta^2 + dPhi^2) of two particles'''
@@ -76,4 +83,19 @@ def met_px_py(MET,MET_phi):
     '''Translates missing energy and its azimuthal angle to Cartesian components'''
     return MET*np.cos(MET_phi), MET*np.sin(MET_phi)
 
-####################################################################################################
+def zboost(particle,rapidity=None,beta=None):
+    '''return a new particle instance boosted in the z direction'''
+    newpart = copy.deepcopy(particle)
+    return newpart.zboost(rapidity=rapidity,beta=beta)
+
+def CoM(*particles):
+    newparts = []
+    rapidity = rap(*particles)
+    for p in particles:
+        newparts.append(zboost(p,rapidity=-rapidity))
+    return tuple(newparts)
+    
+    
+    
+
+################################################################################

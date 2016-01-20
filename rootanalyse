@@ -38,9 +38,7 @@ error_multitree='''
 More than one of the supported tree structures exists in {}. 
 Please specify which one to read using the "-t" option.
 '''.format(args.rootfile)
-error_supported_trees = '''
-TREE option -t "{}" not supported.
-'''.format(args.tree)
+
 ################################################################################
 try: # catch all ParserErrors raised
     # Load ExRootAnalysis library
@@ -69,7 +67,8 @@ try: # catch all ParserErrors raised
 
     try:# See if specified tree name is set of supported trees
         assert args.tree in keys
-        treename = args.tree       
+        treename = args.tree
+   
     except AttributeError: # See if supported tree name is in list of keys
         trees = supported_trees.intersection(set(keys))
         if len(trees)==1: 
@@ -77,6 +76,7 @@ try: # catch all ParserErrors raised
         else:
             raise ParserError(error_multitree,parser)
     except AssertionError:
+        error_supported_trees = '''TREE option -t "{}" not supported.'''.format(args.tree)
         raise ParserError(error_supported_trees,parser)
             
 except ParserError as err:

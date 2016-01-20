@@ -1,7 +1,32 @@
-from particles import Photon, Electron, Tau, Muon, Jet
+from particles import Photon, Electron, Tau, Muon, Jet, Top, Particle
 from event import Event
 import numpy as np
-####################################################################################################
+################################################################################
+'''
+########################################################################
+LHCO, LHEF selector
+Available data members of Event instance, referenced by e.g. evt.photons
+Containers:
+    leptons - List of all lepton objects
+    electrons, muons, taus, photons - Lists of each particle object
+    jets - List of all jets
+    bjets, ljets - Lists of b-tagged and non b-tagged jets
+    exotics - Lists of all particles not identified above 
+             (ONLY for LHE event format & they also contribute to MET)
+Counters:
+    npho, nlep, nele, nmu, ntau, njet, nljet, nbjet, nexo -
+    numbers of each particle type i.e. length of corresponding list
+Global event info:
+    ht_tot - scalar sum of pT of all visible particles
+    ht_jet - scalar sum of pT of all jets
+    ee_jet - sum of all jet energies
+    weight - evt weight, information only present in LHEF
+Missing energy:
+    MET - Missing transverse energy
+    MET_phi - azimuthal direction of MET
+########################################################################
+'''
+################################################################################
 # No acceptance requirements
 default_acceptance ={
     'pt_gam_min' : 0.,
@@ -16,6 +41,7 @@ default_acceptance ={
     'eta_jet_max': 9999999.
 }
 # Reader functions for different TTree structures, LHCO and LHEF only.
+################################################################################
 def read_tree(TTree, acceptance=None):
     tree_name = TTree.GetName()
     if tree_name=='LHCO':
@@ -26,11 +52,14 @@ def read_tree(TTree, acceptance=None):
         print 'Only LHCO and LHEF structures are implemented!'
         sys.exit()
     return reader(TTree, acceptance)
-    
+################################################################################
 def _read_LHCO(tree, acceptance=None):
     '''Read in event ROOT tree of LHCO format imposing acceptance cuts specified by "acceptance"
        returning an Event instance'''
     acc = acceptance if acceptance is not None else default_acceptance
+    for k in default_acceptance.keys():
+        if k not in acc: acc[k]=default_acceptance[k]
+        
     evt = Event() # initialise
     # MET (Sometimes LHCO tree has no attribute MissingET)
     try:
@@ -95,18 +124,28 @@ def _read_LHCO(tree, acceptance=None):
             else: # collect non b-tagged jets
                 evt.ljets.append(jet)
                 evt.nljet+=1
+    # Empty exotics stuff
+    evt.exotics=[]
+    evt.nexo = 0
+    evt.weight = 1.
+    
     return evt
     
+################################################################################
 def _read_LHEF(tree, acceptance=None):
     '''Read in event ROOT tree of LHCO format imposing acceptance cuts specified by "acceptance"
        returning an Event instance'''
-    acc = acceptance if acceptance is not None else default_acceptance   
+    acc = acceptance if acceptance is not None else default_acceptance
+    for k in default_acceptance.keys():
+        if k not in acc: acc[k]=default_acceptance[k]
+        
     evt=Event()
     MET_px, MET_py = 0., 0.
     # select only final state particles
     final_state = filter(lambda p : p.Status > 0, tree.Particle)
     for part in final_state:
         # Photons
+        
         if abs(part.PID) == 22:
             phot = Photon.LHEF(part)
             acceptance = ( ( phot.pt > acc['pt_gam_min'] ) and ( abs(phot.eta) < acc['eta_gam_max'] ) )
@@ -114,7 +153,7 @@ def _read_LHEF(tree, acceptance=None):
                 evt.photons.append(phot)
                 evt.ht_tot+=phot.pt
                 evt.npho+=1 
-        # Leptons                   
+        # Charged leptons                   
         elif abs(part.PID) == 11:
             elec = Electron.LHEF(part)
             acceptance = ( ( elec.pt > acc['pt_ele_min'] ) and ( abs(elec.eta) < acc['eta_ele_max'] ) )
@@ -140,8 +179,14 @@ def _read_LHEF(tree, acceptance=None):
                 evt.taus.append(tau)
                 evt.ht_tot+=tau.pt
                 evt.ntau+=1
-        # Jets (quarks)                 
-        elif abs(part.PID) in (1,2,3,4,5):
+        # Neutrinos
+        elif abs(part.PID) in (12,14,16):
+            nu = Particle.LHEF(part)
+            evt.nus.append(nu)
+            MET_px+=part.Px; MET_py+=part.Py
+            evt.nnu+=1
+        # Jets (quarks & gluons)                 
+        elif abs(part.PID) in (1,2,3,4,5,21):
             jet = Jet.LHEF(part)
             acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and ( abs(jet.eta) < acc['eta_jet_max'] ) )
             if acceptance:
@@ -156,8 +201,20 @@ def _read_LHEF(tree, acceptance=None):
                 else: # collect non b-tagged jets
                     evt.ljets.append(jet)
                     evt.nljet+=1
-        # All other PIDs contribute to MET
-        else:
+        elif abs(part.PID) == 6:
+            top = Top.LHEF(part)
+            acceptance = ( ( top.pt > acc['pt_jet_min'] ) and ( abs(top.eta) < acc['eta_jet_max'] ) )
+            if acceptance:
+                evt.tops.append(top)
+                evt.ht_tot+=top.pt
+                evt.ntop+=1
+                
+        # All other PIDs contribute to MET and grouped into exotics container
+        elif abs(part.PID) not in (23,24,25):
+            exo = Particle.LHEF(part)
+            exo.PID = part.PID
+            evt.exotics.append(exo)
+            evt.nexo += 1 
             MET_px+=part.Px; MET_py+=part.Py
     # MET
     evt.MET = np.sqrt(MET_px**2+MET_py**2)
@@ -170,5 +227,6 @@ def _read_LHEF(tree, acceptance=None):
         evt.weight = tree.Event[0].Weight
     except AttributeError:
         evt.weight = 1.
+        
     return evt
-####################################################################################################
+################################################################################
