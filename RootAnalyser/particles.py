@@ -29,12 +29,12 @@ class Particle: # Base particle class
         self.ee = np.sqrt(self.modp**2+self.mass**2)
         self.px = pt*np.cos(phi) # px
         self.py = pt*np.sin(phi) # pyself.y = get_rapidity(et,pt)
-        self.pz = np.sqrt(self.modp**2-self.pt**2)
+        self.pz = np.sqrt(self.modp**2-self.pt**2)*abs(eta)/eta
         
     def get_y(self,eta,pt,mass):
         modp =  pt*np.cosh(eta)
         ee = np.sqrt(self.modp**2+self.mass**2)
-        pz = np.sqrt(self.modp**2-self.pt**2)
+        pz = np.sqrt(self.modp**2-self.pt**2)*abs(eta)/eta
         return np.log((ee+pz)/(ee-pz))/2.
         
     def set_pt_eta_phi(self,ee,px,py,pz):

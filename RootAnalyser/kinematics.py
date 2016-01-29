@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 from operator import attrgetter
-####################################################################################################
+################################################################################
 # Useful functions  
 
 def pt_sort(particle_list):
@@ -14,13 +14,17 @@ def ee_sort(particle_list):
     
 def pdot(part1,part2):
     '''Returns the scalar product of the 3-momenta of two particles'''
-    return part1.px*part2.px+part1.py*part2.py+part1.pz*part2.pz
+    return part1.px*part2.px + part1.py*part2.py + part1.pz*part2.pz
 
 def fourmom(*particles):
     '''Takes a list of particles and returns the four momentum of the system'''
-    ee, px, py, pz = (0.,)*4
+    # ee, px, py, pz = (0.,)*4
+    ee, px, py, pz = 0., 0., 0., 0.
     for p in particles:
-        ee += p.ee; px += p.px; py += p.py; pz += p.pz
+        ee += p.ee
+        px += p.px
+        py += p.py
+        pz += p.pz
     return ee, px, py, pz 
         
 def Minv(*particles): # Minv(part1,part2,...)
@@ -41,9 +45,10 @@ def psrap(*particles):
     
 def pT(*particles):# pT(part1,part2,...)
     '''Takes a list of particles and returns the pT of the system'''
-    px, py = 0.,0.
+    px, py = 0., 0.
     for p in particles:
-        px += p.px; py += p.py
+        px += p.px
+        py += p.py
     return np.sqrt(px**2 + py**2) 
 
 def HT(*particles):# HT(part1,part2,...)
