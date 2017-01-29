@@ -133,7 +133,7 @@ def _read_LHCO(tree, acceptance=None):
     
 ################################################################################
 def _read_LHEF(tree, acceptance=None):
-    '''Read in event ROOT tree of LHCO format imposing acceptance cuts specified by "acceptance"
+    '''Read in event ROOT tree of LHEF format imposing acceptance cuts specified by "acceptance"
        returning an Event instance'''
     acc = acceptance if acceptance is not None else default_acceptance
     for k in default_acceptance.keys():
@@ -142,7 +142,9 @@ def _read_LHEF(tree, acceptance=None):
     evt=Event()
     MET_px, MET_py = 0., 0.
     # select only final state particles
-    final_state = filter(lambda p : p.Status > 0, tree.Particle)
+    evt.ECM = np.sqrt( (tree.Particle[0].E+tree.Particle[1].E)**2 - 
+                       (tree.Particle[0].Pz+tree.Particle[1].Pz)**2 )
+    final_state = filter(lambda p : p.Status == 1 , tree.Particle)
     for part in final_state:
         # Photons
         
@@ -208,6 +210,24 @@ def _read_LHEF(tree, acceptance=None):
                 evt.tops.append(top)
                 evt.ht_tot+=top.pt
                 evt.ntop+=1
+        
+        elif abs(part.PID) == 23:
+            zbos = Particle.LHEF(part)
+            evt.zs.append(zbos)
+            evt.ht_tot+=zbos.pt
+            evt.nz+=1
+        
+        elif abs(part.PID) == 24:
+            wbos = Particle.LHEF(part)
+            evt.ws.append(wbos)
+            evt.ht_tot+=wbos.pt
+            evt.nw+=1
+        
+        elif abs(part.PID) == 25:
+            higg = Particle.LHEF(part)
+            evt.higgs.append(higg)
+            evt.ht_tot+=higg.pt
+            evt.nhiggs+=1
                 
         # All other PIDs contribute to MET and grouped into exotics container
         elif abs(part.PID) not in (23,24,25):
@@ -219,7 +239,7 @@ def _read_LHEF(tree, acceptance=None):
     # MET
     evt.MET = np.sqrt(MET_px**2+MET_py**2)
     try:
-        evt.MET_phi = np.arctan(MET_py/MET_px)
+        evt.MET_phi = np.arctan2(MET_py,MET_px)
         if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
     except ZeroDivisionError:
         evt.MET_phi = 0.

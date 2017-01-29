@@ -1,9 +1,9 @@
 import numpy as np
-####################################################################################################
+################################################################################
 # Particle classes with alternate constructors from TRootXXXX (LHCO) and TRootLHEFParticle objects.
 # See http://madgraph.phys.ucl.ac.be/Downloads/ExRootAnalysis/RootTreeDescription.html
 # for description of data members in TRootLHEFParticle and TRootPhoton/Jet/Muon... classes
-####################################################################################################
+################################################################################
 # Container classes
 class Particle: # Base particle class
 

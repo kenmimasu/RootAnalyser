@@ -37,10 +37,30 @@ def rap(*particles):
     ee, px, py, pz = fourmom(*particles)
     return np.log( (ee + pz)/(ee - pz) )/2.
     
+def costheta(*particles):
+    '''
+    Returns polar angle of particle system w.r.t z-direction.
+    '''
+    _, px, py, pz = fourmom(*particles)
+    modp = np.sqrt(px**2+py**2+pz**2)
+    costheta = pz/modp if modp!=0. else np.nan 
+    return costheta
+
+def costhetastar(*particles):
+    '''
+    Returns polar angle of the first particle w.r.t direction defined by the 
+    boost direction of the whole system.
+    '''
+    _, px, py, pz = fourmom(*particles)
+    p1 = particles[0]
+    modp = np.sqrt(p1.px**2+p1.py**2+p1.pz**2)
+    costheta = p1.pz/modp*pz/abs(pz) if (modp!=0.) else np.nan 
+    return costheta
+
+
 def psrap(*particles):
     '''Takes a list of particles and returns the pseudo-rapidity of the system'''
-    ee, px, py, pz = fourmom(*particles)
-    costheta = pz/np.sqrt(px**2+py**2+pz**2)
+    costheta = costheta(*particles)
     return np.log( (1 + costheta)/(1 - costheta) )/2.    
     
 def pT(*particles):# pT(part1,part2,...)
@@ -50,6 +70,7 @@ def pT(*particles):# pT(part1,part2,...)
         px += p.px
         py += p.py
     return np.sqrt(px**2 + py**2) 
+    
 
 def HT(*particles):# HT(part1,part2,...)
     '''Takes a list of particles and returns the HT (scalar sum of pTs) of the system'''
@@ -69,6 +90,12 @@ def dphi(*args,**kwargs):# dphi(part1,part2,...,ref_phi=XXX)
     phi_tot = phi(*args)
     dphi = abs(phi_tot-ref_phi)
     return dphi if dphi < np.pi else 2.*np.pi-dphi
+
+def dphi_0_2pi(*args,**kwargs):# dphi(part1,part2,...,ref_phi=XXX)
+    '''Takes a list of particles and returns the azimuthal angle of the 3-momentum of the system optionally w.r.t keyword argument ref_phi'''
+    ref_phi = kwargs.get('ref_phi',0.) # look for ref_phi keyword argument, if not use zero
+    phi_tot = phi(*args)
+    return abs(phi_tot-ref_phi)
 
 def dtheta(part1,part2,degrees=False):
     '''Returns the opening angle between two particles' 3-momenta'''
