@@ -138,7 +138,6 @@ def _read_LHEF(tree, acceptance=None):
     acc = acceptance if acceptance is not None else default_acceptance
     for k in default_acceptance.keys():
         if k not in acc: acc[k]=default_acceptance[k]
-        
     evt=Event()
     MET_px, MET_py = 0., 0.
     # select only final state particles

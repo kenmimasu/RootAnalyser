@@ -1,4 +1,6 @@
 import numpy as np
+import copy
+from scipy.stats import norm
 ################################################################################
 # Particle classes with alternate constructors from TRootXXXX (LHCO) and TRootLHEFParticle objects.
 # See http://madgraph.phys.ucl.ac.be/Downloads/ExRootAnalysis/RootTreeDescription.html
@@ -26,15 +28,15 @@ class Particle: # Base particle class
 
     def set_four_momentum(self,pt,eta,phi,mass):
         self.modp = pt*np.cosh(eta)
-        self.ee = np.sqrt(self.modp**2+self.mass**2)
-        self.px = pt*np.cos(phi) # px
-        self.py = pt*np.sin(phi) # pyself.y = get_rapidity(et,pt)
-        self.pz = np.sqrt(self.modp**2-self.pt**2)*abs(eta)/eta
+        self.ee = np.sqrt(self.modp**2+mass**2)
+        self.px = pt*np.cos(phi)
+        self.py = pt*np.sin(phi)
+        self.pz = np.sqrt(self.modp**2-pt**2)*(abs(eta)/eta if eta!=0. else 0.)
         
     def get_y(self,eta,pt,mass):
         modp =  pt*np.cosh(eta)
-        ee = np.sqrt(self.modp**2+self.mass**2)
-        pz = np.sqrt(self.modp**2-self.pt**2)*abs(eta)/eta
+        ee = np.sqrt(modp**2+mass**2)
+        pz = np.sqrt(modp**2-pt**2)*(abs(eta)/eta if eta!=0. else 0.)
         return np.log((ee+pz)/(ee-pz))/2.
         
     def set_pt_eta_phi(self,ee,px,py,pz):
@@ -59,7 +61,22 @@ class Particle: # Base particle class
         self.theta = np.arccos(self.costheta)
         self.eta = np.log( (1. + self.costheta)/(1. - self.costheta) )/2.   
         return self
-        
+    
+    def smeared(self, res):
+        '''Smear particle 4 momentum according to a Gaussian of width res.'''
+        # duplicate particle
+        smeared_particle = copy.deepcopy(self)
+        # determine smearing factor
+        smear_factor =  norm.rvs(loc=1.,scale=res)
+        # rescale pt, mass
+        smeared_particle.pt *= smear_factor
+        smeared_particle.mass *= smear_factor
+
+        # reset four momentum
+        smeared_particle.set_four_momentum(self.pt,self.eta,self.phi,self.mass)
+    
+        return smeared_particle
+    
     def __repr__(self):
         return repr(self.__dict__)
 ##########
@@ -152,7 +169,7 @@ class Tau(Lepton):
 ##########
 class Jet(Particle):
     def __init__(self, pt, eta, phi, mass, hadem, ntrk, btag):
-        Particle.__init__(self, pt, eta, phi)
+        Particle.__init__(self, pt, eta, phi, mass=mass)
         self.mass  = mass
         self.hadem = hadem
         self.ntrk  = ntrk
@@ -164,7 +181,7 @@ class Jet(Particle):
         return instance(pt, eta, phi, mass, hadem, ntrk, btag)
     @classmethod
     def LHEF(instance, TRootLHEFParticle):
-        pt, eta, phi, mass = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi, -999.
+        pt, eta, phi, mass = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi, TRootLHEFParticle.M
         hadem, ntrk, btag = -999.,-999., 1 if abs(TRootLHEFParticle.PID)==5 else 0
         return instance( pt, eta, phi, mass, hadem, ntrk, btag)
 ##########

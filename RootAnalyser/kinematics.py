@@ -4,6 +4,13 @@ from operator import attrgetter
 ################################################################################
 # Useful functions  
 
+def sort(particle_list, attr):
+    '''
+    Takes a list of particles and returns another list sorted by specified 
+    attribute
+    '''
+    return sorted(particle_list, key=attrgetter(attr),reverse=True)
+
 def pt_sort(particle_list):
     '''Takes a list of particles and returns another list sorted by pT'''
     return sorted(particle_list, key=attrgetter('pt'),reverse=True)
@@ -18,7 +25,6 @@ def pdot(part1,part2):
 
 def fourmom(*particles):
     '''Takes a list of particles and returns the four momentum of the system'''
-    # ee, px, py, pz = (0.,)*4
     ee, px, py, pz = 0., 0., 0., 0.
     for p in particles:
         ee += p.ee
@@ -27,7 +33,7 @@ def fourmom(*particles):
         pz += p.pz
     return ee, px, py, pz 
         
-def Minv(*particles): # Minv(part1,part2,...)
+def Minv(*particles):  # Minv(part1,part2,...)
     '''Takes a list of particles and returns the invariant mass of the system'''
     ee, px, py, pz = fourmom(*particles)
     return np.sqrt(ee**2 - px**2 - py**2 - pz**2)
@@ -103,13 +109,20 @@ def dtheta(part1,part2,degrees=False):
     theta = np.arccos(costheta)
     return theta*180./np.pi if degrees else theta
     
-def deltaR(part1,part2):
+def deltaR(part1, part2):
     '''Returns the spatial separation dR = sqrt(dEta^2 + dPhi^2) of two particles'''
     eta1, phi1 = part1.eta, part1.phi
     eta2, phi2 = part2.eta, part2.phi
     deta, dphi = abs(eta1-eta2), abs(phi1-phi2)
     if dphi > np.pi: dphi = 2*np.pi - dphi
     return np.sqrt( (deta)**2 + (dphi)**2  )
+
+def delta(part1, part2, attr, absval=True):
+    '''
+    Returns the difference of attr data member of two particles
+    '''
+    a1, a2 = getattr(part1, attr), getattr(part2, attr)    
+    return (a1-a2) if not absval else abs(a1-a2)
     
 def met_px_py(MET,MET_phi):
     '''Translates missing energy and its azimuthal angle to Cartesian components'''
