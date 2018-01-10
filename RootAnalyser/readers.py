@@ -175,7 +175,7 @@ def _read_LHEF(tree, acceptance=None):
                 evt.nmu+=1
         elif abs(part.PID) == 15:
             tau = Tau.LHEF(part)
-            acceptance = ( ( tau.pt > acc['pt_mu_min'] ) and ( abs(tau.eta) < acc['eta_mu_max'] ) )
+            acceptance = ( ( tau.pt > acc['pt_tau_min'] ) and ( abs(tau.eta) < acc['eta_tau_max'] ) )
             if acceptance: 
                 evt.taus.append(tau)
                 evt.ht_tot+=tau.pt
@@ -229,7 +229,7 @@ def _read_LHEF(tree, acceptance=None):
             evt.nhiggs+=1
                 
         # All other PIDs contribute to MET and grouped into exotics container
-        elif abs(part.PID) not in (23,24,25):
+        else:
             exo = Particle.LHEF(part)
             exo.PID = part.PID
             evt.exotics.append(exo)
