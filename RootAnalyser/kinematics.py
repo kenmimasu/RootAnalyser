@@ -66,8 +66,8 @@ def costhetastar(*particles):
 
 def psrap(*particles):
     '''Takes a list of particles and returns the pseudo-rapidity of the system'''
-    costheta = costheta(*particles)
-    return np.log( (1 + costheta)/(1 - costheta) )/2.    
+    costh = costheta(*particles)
+    return np.log( (1 + costh)/(1 - costh) )/2.    
     
 def pT(*particles):# pT(part1,part2,...)
     '''Takes a list of particles and returns the pT of the system'''
