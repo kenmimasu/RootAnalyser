@@ -39,51 +39,51 @@ def smear_bjet(*particles):
         result.append( p.smeared(res) )
     
     return result[0] if (len(result)==1) else tuple(result) 
-        
-        
-#### Data for hadronic tau
-_tau_had_eta_bins = [0., 0.8, 1.3, 1.6, 2.4]
-
-_tau_had_pt_bins = [15.0, 25.0, 35.0, 45.0, 55.0, 65.0, 75.0, 
-                    85.0, 100.0, 150.0, 200.0, 300.0, 7000.0]
-
-_tau_had_eff_binned = [ 
-# eta                             pt
-#   bin 1, bin 2, bin 3, bin 4
-    22.  , 24.5 , 24.5 , 24.5 , # bin 1
-    16.5 , 20.75, 22.5 , 20.9 , # bin 2
-    13.15, 17.  , 20.  , 21.  , # bin 3
-    11.5 , 15.  , 19.  , 19.  , # bin 4
-    10.5 , 13.5 , 17.  , 17.  , # bin 5
-    9.5  , 13.5 , 14.5 , 14.5 , # bin 6
-    8.5  , 10.75, 12.  , 13.  , # bin 7
-    7.   , 9.   , 10.5 , 12.  , # bin 8
-    6.5  , 8.   , 9.25 , 10.  , # bin 9
-    6.   , 7.   , 7.3  , 8.5  , # bin 10
-    5.   , 6.   , 6.   , 8.   , # bin 11
-    4.75 , 6.   , 7.   , 5.     # bin 12
-]
 
 
 def smear_tau_hadr(*particles):
+    #### Data for hadronic tau
+    _tau_had_eta_bins = [0., 0.8, 1.3, 1.6, 2.4]
+
+    _tau_had_pt_bins = [15.0, 25.0, 35.0, 45.0, 55.0, 65.0, 75.0, 
+                        85.0, 100.0, 150.0, 200.0, 300.0, 7000.0]
+
+    _tau_had_eff_bins = [ 
+    # eta -->                         pt |
+    #                                    V   
+    #   bin 1, bin 2, bin 3, bin 4
+        22.  , 24.5 , 24.5 , 24.5 , # bin 1
+        16.5 , 20.75, 22.5 , 20.9 , # bin 2
+        13.15, 17.  , 20.  , 21.  , # bin 3
+        11.5 , 15.  , 19.  , 19.  , # bin 4
+        10.5 , 13.5 , 17.  , 17.  , # bin 5
+        9.5  , 13.5 , 14.5 , 14.5 , # bin 6
+        8.5  , 10.75, 12.  , 13.  , # bin 7
+        7.   , 9.   , 10.5 , 12.  , # bin 8
+        6.5  , 8.   , 9.25 , 10.  , # bin 9
+        6.   , 7.   , 7.3  , 8.5  , # bin 10
+        5.   , 6.   , 6.   , 8.   , # bin 11
+        4.75 , 6.   , 7.   , 5.     # bin 12
+    ]
+    
     result = []
     for p in particles:
         # locate pt, eta in efficiency bin
         pti, etai = p.pt, p.eta
-        for etabin in len(_had_eta_bins):
-            if ((abs(etai) > _had_eta_bins[etabin]) and 
-                (abs(etai) < _had_eta_bins[etabin+1])):
+        for etabin in xrange(len(_tau_had_eta_bins)-1):
+            if ((abs(etai) > _tau_had_eta_bins[etabin]) and 
+                (abs(etai) < _tau_had_eta_bins[etabin+1])):
                 break
-        for ptbin in len(_had_pt_bins):
-            if ((pti > _had_pt_bins[ptbin]) and 
-                (pti < _had_pt_bins[ptbin+1])):
+        for ptbin in xrange(len(_tau_had_pt_bins)-1):
+            if ((pti > _tau_had_pt_bins[ptbin]) and 
+                (pti < _tau_had_pt_bins[ptbin+1])):
                 break
         
         # get percentage resoution from _had_eff_binned
-        eff_bin  = len(_had_eta_bins)*ptbin + etabin
+        eff_bin  = len(_tau_had_eta_bins)*ptbin + etabin
         
         try:
-            res= _had_eff_bins[eff_bin]
+            res= _tau_had_eff_bins[eff_bin]/100.
             # smear particle
             result.append( p.smeared(res) )
         except IndexError:
@@ -105,7 +105,7 @@ def smear_tau_elec(*particles):
         par1=0.297411
         par2=0.0137397*(1.+etai*0.07)
         
-        res = np.sqrt( (par0/pti)*2 + (par1/pti)**2 + par2**2 ) 
+        res = np.sqrt( (par0/pti)**2 + (par1/pti)**2 + par2**2 ) 
         
         # smear particle
         result.append( p.smeared(res) )
@@ -121,7 +121,7 @@ def smear_tau_muon(*particles):
         if (abs(etai) < 1.05):
             par0, par1 = 0.0158746, 0.000393809
         elif ( 1.05 <=  (abs(etai)) and (abs(etai) < 1.7)):
-            par0, par1 = 0.0239047,0.000632637
+            par0, par1 = 0.0239047, 0.000632637
         elif ( 1.7 <=  (abs(etai)) and (abs(etai) < 2.4)):
             par0, par1 =0.0330916, 0.000933841
         else:
@@ -129,7 +129,7 @@ def smear_tau_muon(*particles):
             result.append(p)
             continue
         
-        res = np.sqrt( par0* +(par1*pti)**2  )
+        res = np.sqrt( par0**2 +(par1*pti)**2  )
 
         # smear particle
         result.append( p.smeared(res) )

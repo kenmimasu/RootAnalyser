@@ -19,5 +19,12 @@ class Event(): # Basic struct
         self.ht_tot, self.ht_jet, self.ee_jet, self.MET, self.MET_phi = (0.,)*5
         self.weight=1.
     def __repr__(self):
-        print self.__dict__ 
+        # print self.__dict__
+        return '''
+        npho = {npho}, nlep = {nlep}, njet = {njet}
+        nele = {nele}, nmu = {nmu}, ntau = {ntau}
+        nljet = {nljet}, nbjet = {nbjet}, ntop = {ntop}
+        nhiggs = {nhiggs}, nz = {nz}, nw = {nw}
+        nnu = {nnu}, nexo = {nexo}
+        '''.format(**self.__dict__)
 ################################################################################
