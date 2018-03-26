@@ -51,6 +51,8 @@ def process(args):
         raise ParserError(error_supported_trees,parser)
     
     selector = args.selector.replace('.py','')
+    selector_dir = os.path.dirname(args.selector)
+    sys.path.append(selector_dir)
     print ''
     print 'Analysing {} with selector {}.py'.format(args.rootfile, selector)
     print 'Reading tree: {}'.format(treename)
@@ -110,6 +112,7 @@ class ParserError(Exception):
         print >>  rep, ''
         print >>  rep, self.parser.format_help()
         return rep.getvalue()
+        
 ################################################################################
 supported_trees= {'LHCO','LHEF'}
 ################################################################################

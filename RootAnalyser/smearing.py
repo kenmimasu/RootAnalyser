@@ -4,6 +4,9 @@ from operator import attrgetter
 from scipy.stats import norm
 ################################################################################
 # Smearing functions for particle momenta  
+# Parametrised functions obtained from fits in
+# b-jets: https://arxiv.org/pdf/1706.04965.pdf
+# taus: http://atlas.web.cern.ch/Atlas/GROUPS/PHYSICS/PAPERS/PERF-2013-06/
 
 # def smear(particle, res):
 #     '''Smear particle 4 momentum according to a Gaussian of width res.'''
@@ -19,8 +22,9 @@ from scipy.stats import norm
 #
 #     return smeared_particle
 
-def smear_bjet(*particles):
-    '''Smear b-jet according to pt & eta dependent resolution'''
+def smear_bjet(*particles, **kwargs):
+    '''Smear b-jet according to pt & eta dependent resolution.'''
+    seed = kwargs.get('seed',None)
     result = []
     for p in particles:
         # get bjet resolution as a function of pt & eta
@@ -36,12 +40,13 @@ def smear_bjet(*particles):
             result.append(p)
             continue
                     
-        result.append( p.smeared(res) )
+        result.append( p.smeared(res, seed=seed) )
     
     return result[0] if (len(result)==1) else tuple(result) 
 
 
-def smear_tau_hadr(*particles):
+def smear_tau_hadr(*particles, **kwargs):
+    seed = kwargs.get('seed',None)
     #### Data for hadronic tau
     _tau_had_eta_bins = [0., 0.8, 1.3, 1.6, 2.4]
 
@@ -85,14 +90,15 @@ def smear_tau_hadr(*particles):
         try:
             res= _tau_had_eff_bins[eff_bin]/100.
             # smear particle
-            result.append( p.smeared(res) )
+            result.append( p.smeared(res, seed=seed) )
         except IndexError:
             # do nothing
             result.append(p)
         
     return result[0] if (len(result)==1) else tuple(result) 
 
-def smear_tau_elec(*particles):
+def smear_tau_elec(*particles, **kwargs):
+    seed = kwargs.get('seed',None)
     result = []
     for p in particles:
         pti, etai = p.pt, p.eta
@@ -108,12 +114,13 @@ def smear_tau_elec(*particles):
         res = np.sqrt( (par0/pti)**2 + (par1/pti)**2 + par2**2 ) 
         
         # smear particle
-        result.append( p.smeared(res) )
+        result.append( p.smeared(res, seed=seed) )
     
     return result[0] if (len(result)==1) else tuple(result) 
     
 
-def smear_tau_muon(*particles):
+def smear_tau_muon(*particles, **kwargs):
+    seed = kwargs.get('seed',None)
     result = []
     for p in particles:
         pti, etai = p.pt, p.eta
@@ -132,7 +139,7 @@ def smear_tau_muon(*particles):
         res = np.sqrt( par0**2 +(par1*pti)**2  )
 
         # smear particle
-        result.append( p.smeared(res) )
+        result.append( p.smeared(res, seed=seed) )
     
     return result[0] if (len(result)==1) else tuple(result) 
     

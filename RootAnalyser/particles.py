@@ -62,12 +62,12 @@ class Particle: # Base particle class
         self.eta = np.log( (1. + self.costheta)/(1. - self.costheta) )/2.   
         return self
     
-    def smeared(self, res):
+    def smeared(self, res, seed=None):
         '''Smear particle 4 momentum according to a Gaussian of width res.'''
         # duplicate particle
         smeared_particle = copy.deepcopy(self)
         # determine smearing factor
-        smear_factor =  norm.rvs(loc=1.,scale=res)
+        smear_factor =  norm.rvs(loc=1.,scale=res, random_state=seed)
         # rescale pt, mass
         smeared_particle.pt *= smear_factor
         smeared_particle.mass *= smear_factor
