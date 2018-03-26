@@ -34,11 +34,13 @@ default_acceptance ={
     'pt_mu_min'  : 0.,
     'pt_tau_min' : 0.,
     'pt_jet_min' : 0.,
+    'pt_bjet_min' : 0.,
     'eta_gam_max': 9999999.,
     'eta_ele_max': 9999999.,
     'eta_mu_max': 9999999.,
     'eta_tau_max': 9999999.,
-    'eta_jet_max': 9999999.
+    'eta_jet_max': 9999999.,
+    'eta_bjet_max': 9999999.
 }
 # Reader functions for different TTree structures, LHCO and LHEF only.
 ################################################################################
@@ -189,7 +191,12 @@ def _read_LHEF(tree, acceptance=None):
         # Jets (quarks & gluons)                 
         elif abs(part.PID) in (1,2,3,4,5,21):
             jet = Jet.LHEF(part)
-            acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and ( abs(jet.eta) < acc['eta_jet_max'] ) )
+            if jet.btag: # collect b-tagged jets
+                acceptance = ( ( jet.pt > acc['pt_bjet_min'] ) and 
+                               ( abs(jet.eta) < acc['eta_bjet_max'] ) )
+            else:
+                acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and 
+                               ( abs(jet.eta) < acc['eta_jet_max'] ) )
             if acceptance:
                 evt.jets.append(jet)
                 evt.ht_tot+=jet.pt
@@ -204,7 +211,7 @@ def _read_LHEF(tree, acceptance=None):
                     evt.nljet+=1
         elif abs(part.PID) == 6:
             top = Top.LHEF(part)
-            acceptance = ( ( top.pt > acc['pt_jet_min'] ) and ( abs(top.eta) < acc['eta_jet_max'] ) )
+            acceptance = True
             if acceptance:
                 evt.tops.append(top)
                 evt.ht_tot+=top.pt
