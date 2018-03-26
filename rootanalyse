@@ -112,6 +112,7 @@ class ParserError(Exception):
         print >>  rep, ''
         print >>  rep, self.parser.format_help()
         return rep.getvalue()
+        
 ################################################################################
 supported_trees= {'LHCO','LHEF'}
 ################################################################################
