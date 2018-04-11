@@ -41,8 +41,8 @@ def smear_bjet(*particles, **kwargs):
             continue
                     
         if type(seed) is str:
-            if seed.lower()=='auto': seed = hash(p.pt)
-        
+            if seed.lower()=='auto': 
+                seed = abs(hash('{:.3f}'.format(p.pt))) % 2147483647
         result.append( p.smeared(res, seed=seed) )
     
     return result[0] if (len(result)==1) else tuple(result) 
@@ -94,7 +94,8 @@ def smear_tau_hadr(*particles, **kwargs):
             res= _tau_had_eff_bins[eff_bin]/100.
             # smear particle
             if type(seed) is str:
-                if seed.lower()=='auto': seed = hash(p.pt)
+                if seed.lower()=='auto': 
+                    seed = abs(hash('{:.3f}'.format(p.pt))) % 2147483647
             result.append( p.smeared(res, seed=seed) )
         except IndexError:
             # do nothing
@@ -120,7 +121,8 @@ def smear_tau_elec(*particles, **kwargs):
         
         # smear particle
         if type(seed) is str:
-            if seed.lower()=='auto': seed = hash(p.pt)
+            if seed.lower()=='auto': 
+                seed = abs(hash('{:.3f}'.format(p.pt))) % 2147483647
         result.append( p.smeared(res, seed=seed) )
     
     return result[0] if (len(result)==1) else tuple(result) 
@@ -147,7 +149,8 @@ def smear_tau_muon(*particles, **kwargs):
         
         # smear particle
         if type(seed) is str:
-            if seed.lower()=='auto': seed = hash(p.pt)
+            if seed.lower()=='auto': 
+                seed = abs(hash('{:.3f}'.format(p.pt))) % 2147483647
         result.append( p.smeared(res, seed=seed) )
     
     return result[0] if (len(result)==1) else tuple(result) 
