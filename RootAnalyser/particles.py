@@ -67,7 +67,14 @@ class Particle: # Base particle class
         # duplicate particle
         smeared_particle = copy.deepcopy(self)
         # determine smearing factor
+        
+        if type(seed) is str:
+            if seed.lower()=='auto': 
+                seed = abs(hash('{:.3f}'.format(self.pt))) % 2147483647
+        
         smear_factor =  norm.rvs(loc=1.,scale=res, random_state=seed)
+        
+        print seed, smear_factor
         # rescale pt, mass
         smeared_particle.pt *= smear_factor
         smeared_particle.mass *= smear_factor
