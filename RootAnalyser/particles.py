@@ -74,7 +74,6 @@ class Particle: # Base particle class
         
         smear_factor =  norm.rvs(loc=1.,scale=res, random_state=seed)
         
-        print seed, smear_factor
         # rescale pt, mass
         smeared_particle.pt *= smear_factor
         smeared_particle.mass *= smear_factor
