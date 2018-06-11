@@ -1,6 +1,7 @@
 from particles import Photon, Electron, Tau, Muon, Jet, Top, Particle
 from event import Event
 import numpy as np
+import sys
 ################################################################################
 '''
 ########################################################################
@@ -50,8 +51,10 @@ def read_tree(TTree, acceptance=None):
         reader = _read_LHCO
     elif tree_name=='LHEF':
         reader = _read_LHEF
+    elif tree_name=='Delphes':
+        reader = _read_Delphes
     else:
-        print 'Only LHCO and LHEF structures are implemented!'
+        print 'Only LHCO, LHEF and Delphes structures are implemented!'
         sys.exit()
     return reader(TTree, acceptance)
 ################################################################################
@@ -249,6 +252,98 @@ def _read_LHEF(tree, acceptance=None):
         if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
     except ZeroDivisionError:
         evt.MET_phi = 0.
+    try:
+        evt.weight = tree.Event[0].Weight
+    except AttributeError:
+        evt.weight = 1.
+        
+    return evt
+################################################################################
+def _read_Delphes(tree, acceptance=None):
+    '''Read in event ROOT tree of Delphes format imposing acceptance cuts specified by "acceptance"
+       returning an Event instance'''
+    # print sorted([ d for d in dir(tree) if not d.startswith('_')])
+    # print tree
+    # print dir(tree.GetListOfBranches())
+    # for i in xrange(tree.GetListOfBranches().GetEntries()):
+    #     print tree.GetListOfBranches()[i]
+    # l1 = sorted([ d for d in dir(tree.Muon[1]) if not d.startswith('_')])
+    # # l2 = sorted([ d for d in dir(tree.EFlowElectron[1]) if not d.startswith('_')])
+    #
+    # print l1
+    # sys.exit()
+    
+    
+    acc = acceptance if acceptance is not None else default_acceptance
+    for k in default_acceptance.keys():
+        if k not in acc: acc[k]=default_acceptance[k]
+    evt = Event() # initialise
+    # MET (Sometimes LHCO tree has no attribute MissingET)
+    try:
+        evt.MET = tree.MissingET[0].MET
+        evt.MET_phi = tree.MissingET[0].Phi
+    except AttributeError:
+        evt.MET = 0.
+        evt.MET_phi=0.
+        
+    if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
+    # Photons
+    for i in xrange(tree.Photon_size):
+        phot = Photon.Delphes(tree.Photon[i])
+        acceptance = ( ( phot.pt > acc['pt_gam_min'] ) and ( abs(phot.eta) < acc['eta_gam_max'] ) )
+        if acceptance: 
+            evt.photons.append(phot)
+            evt.ht_tot+=phot.pt
+            evt.npho+=1
+        
+    # Leptons
+    for i in xrange(tree.Electron_size):
+        elec = Electron.Delphes(tree.Electron[i])
+        acceptance = ( ( elec.pt > acc['pt_ele_min'] ) and ( abs(elec.eta) < acc['eta_ele_max'] ) )
+        if acceptance: 
+            evt.electrons.append(elec)
+            evt.leptons.append(elec)
+            evt.ht_tot+=elec.pt
+            evt.nlep+=1
+            evt.nele+=1
+        
+    for i in xrange(tree.Muon_size):
+        muon = Muon.Delphes(tree.Muon[i])
+        acceptance = ( ( muon.pt > acc['pt_mu_min'] ) and ( abs(muon.eta) < acc['eta_mu_max'] ) )
+        if acceptance: 
+            evt.muons.append(muon)
+            evt.leptons.append(muon)
+            evt.ht_tot+=muon.pt
+            evt.nlep+=1
+            evt.nmu+=1
+            
+    # for i in xrange(tree.Tau_size):
+    #     tau = Tau.Delphes(tree.Tau[i])
+    #     acceptance = ( ( tau.pt > acc['pt_tau_min'] ) and ( abs(tau.eta) < acc['eta_tau_max'] ) )
+    #     if acceptance:
+    #         evt.taus.append(tau)
+    #         evt.ht_tot+=tau.pt
+    #         evt.ntau+=1
+
+    # Jets
+    for i in xrange(tree.KTjet_size):
+        jet = Jet.Delphes(tree.KTjet[i])
+        acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and ( abs(jet.eta) < acc['eta_jet_max'] ) )
+        if acceptance:
+            evt.jets.append(jet)
+            evt.ht_tot+=jet.pt
+            evt.ht_jet+=jet.pt
+            evt.ee_jet+=jet.ee
+            evt.njet+=1
+            if jet.btag: # collect b-tagged jets
+                evt.bjets.append(jet)
+                evt.nbjet+=1
+            else: # collect non b-tagged jets
+                evt.ljets.append(jet)
+                evt.nljet+=1
+    # Empty exotics stuff
+    evt.exotics=[]
+    evt.nexo = 0    
     try:
         evt.weight = tree.Event[0].Weight
     except AttributeError:

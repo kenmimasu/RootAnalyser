@@ -5,11 +5,12 @@ from scipy.stats import norm
 # Particle classes with alternate constructors from TRootXXXX (LHCO) and TRootLHEFParticle objects.
 # See http://madgraph.phys.ucl.ac.be/Downloads/ExRootAnalysis/RootTreeDescription.html
 # for description of data members in TRootLHEFParticle and TRootPhoton/Jet/Muon... classes
+# https://cp3.irmp.ucl.ac.be/projects/delphes/wiki/WorkBook/RootTreeDescription for Delphes
 ################################################################################
 # Container classes
 class Particle: # Base particle class
 
-    def __init__(self, pt, eta, phi, mass=0., PID=None):
+    def __init__(self, pt, eta, phi, mass=0., PID=-999.):
         self.pt  = pt # Transverse momentum
         self.phi = phi if phi > 0 else phi+2.*np.pi # Azimuthal angle
         self.mass = mass
@@ -45,7 +46,7 @@ class Particle: # Base particle class
         self.eta = np.log( (1. + ct)/(1. - ct) )/2.
         self.phi = np.arctan(py/px) if px > 0 else np.arctan(py/px) + np.pi
 
-    def zboost(self, rapidity=None, beta=None):
+    def zboost(self, rapidity=-999., beta=-999.):
         if rapidity is not None:
             ee = np.cosh(rapidity)*self.ee + np.sinh(rapidity)*self.pz
             pz = np.sinh(rapidity)*self.ee + np.cosh(rapidity)*self.pz
@@ -62,7 +63,7 @@ class Particle: # Base particle class
         self.eta = np.log( (1. + self.costheta)/(1. - self.costheta) )/2.   
         return self
     
-    def smeared(self, res, seed=None):
+    def smeared(self, res, seed=-999.):
         '''Smear particle 4 momentum according to a Gaussian of width res.'''
         # duplicate particle
         smeared_particle = copy.deepcopy(self)
@@ -87,13 +88,19 @@ class Particle: # Base particle class
         return repr(self.__dict__)
 ##########
 class Photon(Particle):
-    def __init__(self, pt, eta, phi, hadem):
+    def __init__(self, pt, eta, phi, hadem=-999., isol=-999.):
         Particle.__init__(self, pt, eta, phi)
         self.hadem = hadem # hadronic over electromagnetic energy
+        self.isol = isol # isolation variable
     @classmethod # Initialise from a TRoot particle object
     def TRoot(instance, TRootPhoton):
         pt, eta, phi = TRootPhoton.PT, TRootPhoton.Eta, TRootPhoton.Phi
         hadem = TRootPhoton.EhadOverEem
+        return instance( pt, eta, phi, hadem)
+    @classmethod # Initialise from a Delphes particle object
+    def Delphes(instance, DelphesPhoton):
+        pt, eta, phi = DelphesPhoton.PT, DelphesPhoton.Eta, DelphesPhoton.Phi
+        hadem = DelphesPhoton.EhadOverEem
         return instance( pt, eta, phi, hadem)
     @classmethod # Initialise from a TRootLHEFParticle object
     def LHEF(instance, TRootLHEFParticle):
@@ -106,7 +113,7 @@ class Photon(Particle):
         return instance( pt, eta, phi, hadem)
 ##########
 class Lepton(Particle): # Base Lepton class
-    def __init__(self, pt, eta, phi, ntrk, charge):
+    def __init__(self, pt, eta, phi, charge, ntrk=-999.):
         Particle.__init__(self, pt, eta, phi)
         self.charge = charge # EM charge
         self.ntrk   = ntrk # Number of tracks
@@ -114,23 +121,34 @@ class Lepton(Particle): # Base Lepton class
     def TRoot(instance, TRootLepton):
         pt, eta, phi = TRootLepton.PT, TRootLepton.Eta, TRootLepton.Phi
         ntrk, charge = TRootLepton.Ntrk, TRootLepton.Charge
-        return instance( pt, eta, phi, ntrk, charge)
+        return instance( pt, eta, phi, charge, ntrk)
+    @classmethod
+    def Delphes(instance, DelphesLepton):
+        pt, eta, phi = DelphesLepton.PT, DelphesLepton.Eta, DelphesLepton.Phi
+        charge = DelphesLepton.Charge
+        return instance( pt, eta, phi, charge)
     @classmethod
     def LHEF(instance, TRootLHEFParticle):
         pt, eta, phi = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi
-        ntrk, charge = -999., -TRootLHEFParticle.PID/abs(TRootLHEFParticle.PID)
-        return instance( pt, eta, phi, ntrk, charge)
+        charge = -TRootLHEFParticle.PID/abs(TRootLHEFParticle.PID)
+        return instance( pt, eta, phi, charge)
 ##########
 class Electron(Lepton):
-    def __init__(self, pt, eta, phi, hadem, ntrk, charge):
-        Lepton.__init__(self, pt, eta, phi, ntrk, charge)
+    def __init__(self, pt, eta, phi, charge, hadem=-999., ntrk=-999., isol=-999.):
+        Lepton.__init__(self, pt, eta, phi, charge, ntrk=ntrk)
         self.flavour = 'e'
         self.hadem = hadem
+        self.isol = isol
     @classmethod
     def TRoot(instance, TRootElectron):
         pt, eta, phi = TRootElectron.PT, TRootElectron.Eta, TRootElectron.Phi
         hadem, ntrk, charge = TRootElectron.EhadOverEem, TRootElectron.Ntrk, TRootElectron.Charge
-        return instance( pt, eta, phi, hadem, ntrk, charge)
+        return instance( pt, eta, phi, charge, hadem=hadem, ntrk=ntrk)
+    @classmethod
+    def Delphes(instance, DelphesElectron):
+        pt, eta, phi = DelphesElectron.PT, DelphesElectron.Eta, DelphesElectron.Phi
+        hadem, charge = DelphesElectron.EhadOverEem, DelphesElectron.Charge
+        return instance( pt, eta, phi, charge, hadem=hadem)
     @classmethod
     def LHEF(instance, TRootLHEFParticle):
         pt, eta, phi = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi
@@ -138,8 +156,8 @@ class Electron(Lepton):
         return instance( pt, eta, phi, hadem, ntrk, charge)
 ##########
 class Muon(Lepton):
-    def __init__(self, pt, eta, phi, charge, ntrk, pTiso, ETiso, jindx):
-        Lepton.__init__(self, pt, eta, phi, ntrk, charge)
+    def __init__(self, pt, eta, phi, charge, ntrk=-999., pTiso=-999., ETiso=-999., jindx=-999):
+        Lepton.__init__(self, pt, eta, phi, charge, ntrk=ntrk)
         self.flavour = 'mu'
         self.pTiso = pTiso # Track pT isolation variable
         self.ETiso = ETiso # Calorimeter ET isolation variable
@@ -149,17 +167,21 @@ class Muon(Lepton):
         pt, eta, phi = TRootMuon.PT, TRootMuon.Eta, TRootMuon.Phi
         ntrk, charge = TRootMuon.Ntrk, TRootMuon.Charge
         pTiso, ETiso, jindx = TRootMuon.PTiso, TRootMuon.ETiso, TRootMuon.JetIndex
-        return instance( pt, eta, phi, charge, ntrk, pTiso, ETiso, jindx)
+        return instance( pt, eta, phi, charge, ntrk=ntrk, pTiso=pTiso, ETiso=ETiso, jindx=jindx)
+    @classmethod
+    def Delphes(instance, DelphesMuon):
+        pt, eta, phi = DelphesMuon.PT, DelphesMuon.Eta, DelphesMuon.Phi
+        charge = DelphesMuon.Charge
+        return instance( pt, eta, phi, charge)
     @classmethod
     def LHEF(instance, TRootLHEFParticle):
         pt, eta, phi = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi
-        ntrk, charge = -999., -TRootLHEFParticle.PID/abs(TRootLHEFParticle.PID)
-        pTiso, ETiso, jindx = -999., -999., -999.
-        return instance( pt, eta, phi, charge, ntrk, pTiso, ETiso, jindx)
+        charge = -TRootLHEFParticle.PID/abs(TRootLHEFParticle.PID)
+        return instance( pt, eta, phi, charge)
 ##########
 class Tau(Lepton):
-    def __init__(self, pt, eta, phi, hadem, ntrk, charge):
-        Lepton.__init__(self, pt, eta, phi, ntrk, charge)
+    def __init__(self, pt, eta, phi, charge, hadem=-999., ntrk=-999.):
+        Lepton.__init__(self, pt, eta, phi, charge, ntrk=ntrk)
         self.flavour = 'tau'
         self.hadem = hadem
     @classmethod
@@ -168,13 +190,17 @@ class Tau(Lepton):
         hadem, ntrk, charge = TRootTau.EhadOverEem, TRootTau.Ntrk, TRootTau.Charge
         return instance( pt, eta, phi, hadem, ntrk, charge)
     @classmethod
+    def Delphes(instance, DelphesTau):
+        pt, eta, phi = DelphesTau.PT, DelphesTau.Eta, DelphesTau.Phi
+        return instance( pt, eta, phi, 0.)
+    @classmethod
     def LHEF(instance, TRootLHEFParticle):
         pt, eta, phi = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi
         hadem, ntrk, charge = -999.,-999., -TRootLHEFParticle.PID/abs(TRootLHEFParticle.PID)
         return instance( pt, eta, phi, hadem, ntrk, charge)
 ##########
 class Jet(Particle):
-    def __init__(self, pt, eta, phi, mass, hadem, ntrk, btag):
+    def __init__(self, pt, eta, phi, mass, btag, hadem=-999., ntrk=-999.):
         Particle.__init__(self, pt, eta, phi, mass=mass)
         self.mass  = mass
         self.hadem = hadem
@@ -184,12 +210,17 @@ class Jet(Particle):
     def TRoot(instance, TRootJet):
         pt, eta, phi, mass = TRootJet.PT, TRootJet.Eta, TRootJet.Phi, TRootJet.Mass
         hadem, ntrk, btag = TRootJet.EhadOverEem, TRootJet.Ntrk, TRootJet.BTag
-        return instance(pt, eta, phi, mass, hadem, ntrk, btag)
+        return instance(pt, eta, phi, mass, btag, hadem=hadem, ntrk=ntrk)
+    @classmethod
+    def Delphes(instance, DelphesJet):
+        pt, eta, phi, mass = DelphesJet.PT, DelphesJet.Eta, DelphesJet.Phi, DelphesJet.Mass
+        hadem, ntrk, btag = DelphesJet.EhadOverEem, DelphesJet.NCharged, DelphesJet.BTag
+        return instance(pt, eta, phi, mass, btag, hadem=hadem, ntrk=hadem)
     @classmethod
     def LHEF(instance, TRootLHEFParticle):
         pt, eta, phi, mass = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi, TRootLHEFParticle.M
-        hadem, ntrk, btag = -999.,-999., 1 if abs(TRootLHEFParticle.PID)==5 else 0
-        return instance( pt, eta, phi, mass, hadem, ntrk, btag)
+        btag = 1 if abs(TRootLHEFParticle.PID)==5 else 0
+        return instance( pt, eta, phi, mass, btag)
 ##########
 class Top(Particle):
     def __init__(self, pt, eta, phi, mass=175.):
