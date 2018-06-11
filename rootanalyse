@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ################################################################################
-from RootAnalyser import exroot_dir as RA_exrootdir
+from RootAnalyser import lib_dir as RA_lib_dir
 import time
 import os
 import sys
@@ -11,12 +11,16 @@ import ROOT
 ################################################################################
 def process(args):
     
-    libexroot = '{}/libExRootAnalysis.so'.format(exrootdir)
-    if not os.path.exists(libexroot): 
-        raise ParserError('Could not find "libExRootAnalysis.so" in {}'.format(exrootdir),parser)
-    print 'Found libExRootAnalysis.so in {}'.format(exrootdir)
+    for lib, path in lib_dir.items():
+        
+        libpath = '{}/{}'.format(path,lib)
 
-    ROOT.gSystem.Load(libexroot)
+        if not os.path.exists(libpath): 
+            raise ParserError('Could not find "{}" in {}'.format(lib,path),parser)
+        print 'Found {} in {}'.format(lib,path)
+
+        ROOT.gSystem.Load(libpath)
+
     # Get list of keys in file
     keys = []
     try:
@@ -114,10 +118,11 @@ class ParserError(Exception):
         return rep.getvalue()
         
 ################################################################################
-supported_trees= {'LHCO','LHEF'}
+supported_trees= {'LHCO','LHEF','Delphes'}
 ################################################################################
 parser = argparse.ArgumentParser(description="Analyse an event file in LHCO or LHEF format using your TPySelector.")
-parser.add_argument("-e","--exroot", metavar="EXROOT", type=str, default=argparse.SUPPRESS, help="Location of libExRootAnalysis.so")
+parser.add_argument("--libexroot", metavar="EXROOT", type=str, default=argparse.SUPPRESS, help="Location of libExRootAnalysis.so")
+parser.add_argument("--libdelphes", metavar="DELPHES", type=str, default=argparse.SUPPRESS, help="Location of libDelphes.so")
 subparsers = parser.add_subparsers()
 ################################################################################
 parser_proc = subparsers.add_parser('process', help='Analyse an event file in LHCO or LHEF format using your TPySelector.')
@@ -138,26 +143,41 @@ args = parser.parse_args()
 
 
 ################################################################################
+error_lib_option='''
+Location of {} unspecified. use "--{}" option, 
+define an environment variable "{}" or modify 
+lib_dir in __init__.py of the RootAnalyser package.
+'''.format
+
+lib_defaults = {
+    'libExRootAnalysis.so':{
+        'parser_opt':'libexroot',
+        'env_var':'EXROOTANALYSIS'
+    },
+    'libDelphes.so':{
+        'parser_opt':'libdelphes',
+        'env_var':'DELPHES_ROOT'
+    }
+}
 
 try: # catch all ParserErrors raised
     # Load ExRootAnalysis library
-    try:
-        exrootdir = args.exroot
-    except AttributeError:
+    lib_dir = {}
+    for lib, defaults in lib_defaults.items():
         try:
-            exrootdir = os.environ['EXROOTANALYSIS']
-            if not exrootdir.strip(): 
-                raise KeyError
-        except KeyError:
-            exrootdir = RA_exrootdir
-            print 'Trying default location for libExRootAnalysis.so: {}'.format(exrootdir)
-            if not os.path.exists(exrootdir):
-                error_e_option='''
-                Location of libExRootAnalysis.so unspecified. use "-e" option, 
-                define an environment variable "EXROOTANALYSIS" or set 
-                exroot_dir in __init__.py of the RootAnalyser package.
-                '''
-                raise ParserError(error_e_option, parser)
+            lib_dir[lib] = getattr(args, defaults['parser_opt'])
+        except AttributeError:
+            try:
+                lib_dir[lib] = os.environ[defaults['env_var']]
+                if not lib_dir[lib].strip(): 
+                    raise KeyError
+            except KeyError:
+                lib_dir[lib] = RA_lib_dir[lib]
+                print 'Trying default location for {}: {}'.format(lib, lib_dir[lib])
+                if not os.path.exists(lib_dir[lib]):
+                    errmsg = error_lib_option(lib, lib_dir['parser_opt'],
+                                              lib_dir['env_var'])
+                    raise ParserError(errmsg, parser)
     
     # call appropriate function
     args.run(args)
