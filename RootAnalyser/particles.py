@@ -10,7 +10,7 @@ from RootAnalyser.kinematics import fourmom
 # https://cp3.irmp.ucl.ac.be/projects/delphes/wiki/WorkBook/RootTreeDescription for Delphes
 ################################################################################
 # Lorentz Classes
-class FourVector:
+class FourVector(object):
 
     def __init__(self, x0, x1, x2, x3):
         self._entries = np.array([x0, x1, x2, x3])
@@ -235,7 +235,8 @@ class Particle: # Base particle class
         return boost_particle
         
     def boost(self, ee, px, py, pz):
-        '''boost particle momenta into the rest frame of 4 momentum.'''
+        '''boost particle momenta into the rest frame of 4 momentum
+        (ee, ee, px, py, pz ).'''
         pp = np.sqrt(px**2 + py**2 + pz**2)
         # mm = np.sqrt(ee**2 - pp**2)
         be = pp/ee

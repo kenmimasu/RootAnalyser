@@ -73,8 +73,10 @@ def process(args):
 def convert(args):
     lhco_converter(args.eventfile, outfile=args.rootfile)
 
+    
 def lhco_converter(infile, outfile=None):
     extension = infile.split('.')[-1].strip().lower()
+    
     
     if extension.lower() == 'lhe':
         executable = 'ExRootLHEFConverter'
@@ -90,6 +92,9 @@ def lhco_converter(infile, outfile=None):
         
     if os.path.exists(outfile):
         os.remove(outfile)
+    
+    # assumes the converters are in the same place as libExRootAnalysis.so
+    exrootdir = RA_lib_dir['libExRootAnalysis.so']
     
     converter = subprocess.Popen(['{}/{}'.format(exrootdir,executable),
                                  infile, outfile], 
