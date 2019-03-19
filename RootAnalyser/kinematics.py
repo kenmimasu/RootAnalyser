@@ -45,7 +45,7 @@ def rap(*particles):
     
 def costheta(*particles):
     '''
-    Returns polar angle of particle system w.r.t z-direction.
+    Returns cosine of polar angle of particle system w.r.t z-direction.
     '''
     _, px, py, pz = fourmom(*particles)
     modp = np.sqrt(px**2+py**2+pz**2)
@@ -54,7 +54,7 @@ def costheta(*particles):
 
 def costhetastar(*particles):
     '''
-    Returns polar angle of the first particle w.r.t direction defined by the 
+    Returns cosine of polar angle of the first particle w.r.t direction defined by the 
     boost direction of the whole system.
     '''
     _, px, py, pz = fourmom(*particles)

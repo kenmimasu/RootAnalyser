@@ -253,10 +253,18 @@ def _read_LHEF(tree, acceptance=None):
         if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
     except ZeroDivisionError:
         evt.MET_phi = 0.
+    # Weight
     try:
         evt.weight = tree.Event[0].Weight
     except AttributeError:
         evt.weight = 1.
+    
+    evt.rwgt = []
+    try:
+        for w in tree.Rwgt:
+            evt.rwgt.append(w.Weight)
+    except AttributeError:
+        pass
         
     return evt
 ################################################################################

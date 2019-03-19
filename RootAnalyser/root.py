@@ -17,7 +17,10 @@ def write_TH1(hist, handle, normed=True):
     nevents = hist.GetEntries()
     integral = hist.Integral()
     norm = integral if (normed and integral > 0.) else 1.
-    handle.write('# {} Entries, integral = {}\n'.format(nevents,integral))
+    if normed:
+        handle.write('# {} Entries, integral = 1}\n'.format(nevents))
+    else:
+        handle.write('# {} Entries, integral = {}\n'.format(nevents,integral))
     handle.write('# x\ty\tdy\n')
     for i in range(1, hist.GetNbinsX()+2):
         val = hist.GetBinContent(i)
@@ -29,7 +32,10 @@ def write_TH2(hist, handle, normed=True):
     nevents = hist.GetEntries()
     integral = hist.Integral()
     norm = integral if (normed and integral > 0.) else 1.
-    handle.write('# {} Entries, integral = {}\n'.format(nevents,integral))
+    if normed:
+        handle.write('# {} Entries, integral = 1}\n'.format(nevents))
+    else:
+        handle.write('# {} Entries, integral = {}\n'.format(nevents,integral))
     handle.write('# x\ty\tz\tdz\n')
     nxbins, nybins = hist.GetNbinsX()+2, hist.GetNbinsY()+2
     xaxis, yaxis = hist.GetXaxis(), hist.GetYaxis()

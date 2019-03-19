@@ -258,6 +258,7 @@ class Particle: # Base particle class
         return boost_particle
     
     def boost_to_restframe(self, *parts):
+        '''boost particle to the rest frame of a (system of) particle(s)'''
         return self.boost(*fourmom(*parts))
         
     def smeared(self, res, seed=-999.):
