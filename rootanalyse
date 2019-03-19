@@ -8,6 +8,7 @@ import argparse
 import subprocess
 import StringIO
 import ROOT
+from collections import OrderedDict
 ################################################################################
 def process(args):
     
@@ -18,8 +19,13 @@ def process(args):
         if not os.path.exists(libpath): 
             raise ParserError('Could not find "{}" in {}'.format(lib,path),parser)
         print 'Found {} in {}'.format(lib,path)
-
+        print 'loading '+lib
+                
+        if lib == 'libDelphes.so':
+            ROOT.gROOT.ProcessLine(".include {}/external".format(path))
+        
         ROOT.gSystem.Load(libpath)
+
 
     # Get list of keys in file
     keys = []
@@ -149,21 +155,15 @@ define an environment variable "{}" or modify
 lib_dir in __init__.py of the RootAnalyser package.
 '''.format
 
-lib_defaults = {
-    'libExRootAnalysis.so':{
-        'parser_opt':'libexroot',
-        'env_var':'EXROOTANALYSIS'
-    },
-    'libDelphes.so':{
-        'parser_opt':'libdelphes',
-        'env_var':'DELPHES_ROOT'
-    }
-}
-
+lib_defaults = (
+    ('libExRootAnalysis.so', {'parser_opt':'libexroot','env_var':'EXROOTANALYSIS'}),
+    ('libDelphes.so', {'parser_opt':'libdelphes', 'env_var':'DELPHES_ROOT'})
+)
+    
 try: # catch all ParserErrors raised
-    # Load ExRootAnalysis library
-    lib_dir = {}
-    for lib, defaults in lib_defaults.items():
+    # Load Libraries
+    lib_dir = OrderedDict()
+    for lib, defaults in lib_defaults:
         try:
             lib_dir[lib] = getattr(args, defaults['parser_opt'])
         except AttributeError:
