@@ -2,7 +2,10 @@ from ROOT import TPySelector,TH1F
 import ROOT
 import random, os
 import numpy as np
-from LHCO import *
+from RootAnalyser.event import Event
+from RootAnalyser.root import *
+from RootAnalyser.kinematics import *
+from RootAnalyser.readers import read_tree
 from itertools import product, combinations
 ########################################################################
 # Acceptance
@@ -18,8 +21,7 @@ pt_tau_min, eta_tau_max = 0., 9999999.
 pt_jet_min, eta_jet_max = 0., 9999999.
 ########################################################################
 # Tuple of histogram init arguments
-histargs = (
-            )
+histargs = ()
 ########################################################################
 def try_except(fn):
     """decorator for extra debugging output"""
@@ -101,7 +103,7 @@ class MyPySelector( TPySelector ):
         #             
         ################################################################
         # Begin Analysis
-        if not entry % 10000: print entry
+        if not entry % 1000: print entry
 
         # if entry ==10: self.Abort('ABORT!')
         return 1

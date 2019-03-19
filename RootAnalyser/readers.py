@@ -212,6 +212,7 @@ def _read_LHEF(tree, acceptance=None):
                 else: # collect non b-tagged jets
                     evt.ljets.append(jet)
                     evt.nljet+=1
+                    
         elif abs(part.PID) == 6:
             top = Top.LHEF(part)
             acceptance = True
@@ -252,10 +253,18 @@ def _read_LHEF(tree, acceptance=None):
         if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
     except ZeroDivisionError:
         evt.MET_phi = 0.
+    # Weight
     try:
         evt.weight = tree.Event[0].Weight
     except AttributeError:
         evt.weight = 1.
+    
+    evt.rwgt = []
+    try:
+        for w in tree.Rwgt:
+            evt.rwgt.append(w.Weight)
+    except AttributeError:
+        pass
         
     return evt
 ################################################################################
@@ -326,24 +335,78 @@ def _read_Delphes(tree, acceptance=None):
     #         evt.ntau+=1
 
     # Jets
-    for i in xrange(tree.KTjet_size):
-        jet = Jet.Delphes(tree.KTjet[i])
-        acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and ( abs(jet.eta) < acc['eta_jet_max'] ) )
-        if acceptance:
-            evt.jets.append(jet)
-            evt.ht_tot+=jet.pt
-            evt.ht_jet+=jet.pt
-            evt.ee_jet+=jet.ee
-            evt.njet+=1
-            if jet.btag: # collect b-tagged jets
-                evt.bjets.append(jet)
-                evt.nbjet+=1
-            else: # collect non b-tagged jets
-                evt.ljets.append(jet)
-                evt.nljet+=1
+    # check Jet container name
+    try:
+        jet_size, jet_array = tree.KTjet_size, tree.KTjet
+    except AttributeError:
+        jet_size, jet_array = tree.Jet_size, tree.Jet
+    
+    for i in xrange(jet_size):
+        # check Tau tag
+        if not jet_array[i].TauTag:
+            jet = Jet.Delphes(jet_array[i])
+            acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and ( abs(jet.eta) < acc['eta_jet_max'] ) )
+            if acceptance:
+                evt.jets.append(jet)
+                evt.ht_tot+=jet.pt
+                evt.ht_jet+=jet.pt
+                evt.ee_jet+=jet.ee
+                evt.njet+=1
+                if jet.btag: # collect b-tagged jets
+                    evt.bjets.append(jet)
+                    evt.nbjet+=1
+                else: # collect non b-tagged jets
+                    evt.ljets.append(jet)
+                    evt.nljet+=1
+        else:
+            tau = Tau.Delphes(jet_array[i])
+            acceptance = ( ( tau.pt > acc['pt_tau_min'] ) and ( abs(tau.eta) < acc['eta_tau_max'] ) )
+            if acceptance: 
+                evt.taus.append(tau)
+                evt.ht_tot+=tau.pt
+                evt.ntau+=1
+    
     # Empty exotics stuff
     evt.exotics=[]
-    evt.nexo = 0    
+    evt.nexo = 0
+    
+        # try:
+        #     for i in xrange(tree.KTjet_size):
+        #         jet = Jet.Delphes(tree.KTjet[i])
+        #         acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and ( abs(jet.eta) < acc['eta_jet_max'] ) )
+        #         if acceptance:
+        #             evt.jets.append(jet)
+        #             evt.ht_tot+=jet.pt
+        #             evt.ht_jet+=jet.pt
+        #             evt.ee_jet+=jet.ee
+        #             evt.njet+=1
+        #             if jet.btag: # collect b-tagged jets
+        #                 evt.bjets.append(jet)
+        #                 evt.nbjet+=1
+        #             else: # collect non b-tagged jets
+        #                 evt.ljets.append(jet)
+        #                 evt.nljet+=1
+        #
+        # except AttributeError:
+        #     for i in xrange(tree.Jet_size):
+        #         jet = Jet.Delphes(tree.Jet[i])
+        #         acceptance = ( ( jet.pt > acc['pt_jet_min'] ) and ( abs(jet.eta) < acc['eta_jet_max'] ) )
+        #         if acceptance and not :
+        #             evt.jets.append(jet)
+        #             evt.ht_tot+=jet.pt
+        #             evt.ht_jet+=jet.pt
+        #             evt.ee_jet+=jet.ee
+        #             evt.njet+=1
+        #             if jet.btag: # collect b-tagged jets
+        #                 evt.bjets.append(jet)
+        #                 evt.nbjet+=1
+        #             else: # collect non b-tagged jets
+        #                 evt.ljets.append(jet)
+        #                 evt.nljet+=1
+        #     # Empty exotics stuff
+        #     evt.exotics=[]
+        #     evt.nexo = 0
+        
     try:
         evt.weight = tree.Event[0].Weight
     except AttributeError:
