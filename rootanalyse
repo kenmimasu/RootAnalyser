@@ -20,7 +20,9 @@ def process(args):
             raise ParserError('Could not find "{}" in {}'.format(lib,path),parser)
         print 'Found {} in {}'.format(lib,path)
         print 'loading '+lib
-                
+        
+        if lib == 'libExRootAnalysis.so':
+            ROOT.gROOT.ProcessLine(".include {}".format(path))
         if lib == 'libDelphes.so':
             ROOT.gROOT.ProcessLine(".include {}/external".format(path))
         

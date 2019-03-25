@@ -18,7 +18,7 @@ def write_TH1(hist, handle, normed=True):
     integral = hist.Integral()
     norm = integral if (normed and integral > 0.) else 1.
     if normed:
-        handle.write('# {} Entries, integral = 1}\n'.format(nevents))
+        handle.write('# {} Entries, integral = 1\n'.format(nevents))
     else:
         handle.write('# {} Entries, integral = {}\n'.format(nevents,integral))
     handle.write('# x\ty\tdy\n')
@@ -33,7 +33,7 @@ def write_TH2(hist, handle, normed=True):
     integral = hist.Integral()
     norm = integral if (normed and integral > 0.) else 1.
     if normed:
-        handle.write('# {} Entries, integral = 1}\n'.format(nevents))
+        handle.write('# {} Entries, integral = 1\n'.format(nevents))
     else:
         handle.write('# {} Entries, integral = {}\n'.format(nevents,integral))
     handle.write('# x\ty\tz\tdz\n')
