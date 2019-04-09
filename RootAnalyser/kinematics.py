@@ -37,6 +37,11 @@ def Minv(*particles):  # Minv(part1,part2,...)
     '''Takes a list of particles and returns the invariant mass of the system'''
     ee, px, py, pz = fourmom(*particles)
     return np.sqrt(ee**2 - px**2 - py**2 - pz**2)
+
+def MT(*particles):  # Minv(part1,part2,...)
+    '''Takes a list of particles and returns the invariant mass of the system'''
+    ee, px, py, pz = fourmom(*particles)
+    return np.sqrt(ee**2 - pz**2)
     
 def rap(*particles):
     '''Takes a list of particles and returns the rapidity of the system'''

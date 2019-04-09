@@ -236,7 +236,7 @@ class Particle: # Base particle class
         
     def boost(self, ee, px, py, pz):
         '''boost particle momenta into the rest frame of 4 momentum
-        (ee, ee, px, py, pz ).'''
+        (ee, px, py, pz ).'''
         pp = np.sqrt(px**2 + py**2 + pz**2)
         # mm = np.sqrt(ee**2 - pp**2)
         be = pp/ee
@@ -315,6 +315,7 @@ class Lepton(Particle): # Base Lepton class
         Particle.__init__(self, pt, eta, phi)
         self.charge = charge # EM charge
         self.ntrk   = ntrk # Number of tracks
+        
     @classmethod
     def TRoot(instance, TRootLepton):
         pt, eta, phi = TRootLepton.PT, TRootLepton.Eta, TRootLepton.Phi
@@ -337,6 +338,7 @@ class Electron(Lepton):
         self.flavour = 'e'
         self.hadem = hadem
         self.isol = isol
+        
     @classmethod
     def TRoot(instance, TRootElectron):
         pt, eta, phi = TRootElectron.PT, TRootElectron.Eta, TRootElectron.Phi
@@ -350,8 +352,9 @@ class Electron(Lepton):
     @classmethod
     def LHEF(instance, TRootLHEFParticle):
         pt, eta, phi = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi
-        hadem, ntrk, charge = -999.,-999., -TRootLHEFParticle.PID/abs(TRootLHEFParticle.PID)
-        return instance( pt, eta, phi, hadem, ntrk, charge)
+        charge = -TRootLHEFParticle.PID/abs(TRootLHEFParticle.PID)
+        return instance( pt, eta, phi, charge)
+        
 ##########
 class Muon(Lepton):
     def __init__(self, pt, eta, phi, charge, ntrk=-999., pTiso=-999., ETiso=-999., jindx=-999):
