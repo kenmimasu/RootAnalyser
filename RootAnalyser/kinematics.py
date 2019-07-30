@@ -38,10 +38,19 @@ def Minv(*particles):  # Minv(part1,part2,...)
     ee, px, py, pz = fourmom(*particles)
     return np.sqrt(ee**2 - px**2 - py**2 - pz**2)
 
-def MT(*particles):  # Minv(part1,part2,...)
-    '''Takes a list of particles and returns the invariant mass of the system'''
+def MT(*particles):  # MT(part1,part2,...)
+    '''Takes a list of particles and returns the transverse mass of the system'''
     ee, px, py, pz = fourmom(*particles)
     return np.sqrt(ee**2 - pz**2)
+
+def MT_miss(*particles):  # MT(part1,part2,...)
+    '''Takes a list of particles and returns the collider version of the transverse mass of the system'''
+    et, px, py = 0., 0., 0.
+    for p in particles:
+        et += np.sqrt(p.pt**2+p.mass**2)
+        px += p.px
+        py += p.py
+    return  np.sqrt(et**2 - px**2 - py**2)
     
 def rap(*particles):
     '''Takes a list of particles and returns the rapidity of the system'''

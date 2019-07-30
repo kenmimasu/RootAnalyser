@@ -214,7 +214,10 @@ def _read_LHEF(tree, acceptance=None):
                     evt.nljet+=1
                     
         elif abs(part.PID) == 6:
-            top = Top.LHEF(part)
+            # check if t or tbar
+            anti = True if part.PID==-6 else False
+            top = Top.LHEF(part, anti=anti)
+            # no acceptance requirements
             acceptance = True
             if acceptance:
                 evt.tops.append(top)

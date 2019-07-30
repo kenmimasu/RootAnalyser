@@ -125,9 +125,15 @@ class Particle: # Base particle class
         self.theta = np.arccos(self.costheta)
         
     @classmethod
+    def from_cartesian(instance, px, py, pz, mass=0., PID=-999.):
+        pt, eta ,phi = instance.pt_eta_phi_from_cartesian(px, py, pz, mass)
+        return instance(pt, eta, phi, mass=mass, PID=PID)
+        
+    @classmethod
     def LHEF(instance, TRootLHEFParticle):
         return instance(TRootLHEFParticle.PT, TRootLHEFParticle.Eta, 
                         TRootLHEFParticle.Phi, mass=TRootLHEFParticle.M)
+                        
     @classmethod
     def system(instance, *parts):
         ee, px, py, pz = 0., 0., 0., 0.
@@ -195,7 +201,27 @@ class Particle: # Base particle class
         self.modp = np.sqrt( self.px**2 + self.py**2 + self.pz**2 )
         self.costheta = self.pz/self.modp
         self.theta = np.arccos(self.costheta)
-    
+
+    @staticmethod 
+    def pt_eta_phi_from_cartesian(px, py, pz, mass):
+        modp = np.sqrt(px**2+py**2+pz**2)
+        if modp!=0.:
+            ct = pz/modp 
+            eta = np.log( (1. + ct)/(1. - ct) )/2.
+        else:
+            eta=0.
+            
+        pt = np.sqrt(px**2+py**2) 
+        if pt!=0.:            
+            if px != 0.:
+                phi = np.arctan(py/px) if px > 0 else np.arctan(py/px) + np.pi
+            else:
+                phi = py/abs(py)*np.pi/2.
+        else:
+            phi = 0.
+        
+        return pt, eta, phi
+            
     def calc_pt_eta_phi(self,ee,px,py,pz):
         self.modp = np.sqrt(px**2+py**2+pz**2)
         if self.modp!=0.:
@@ -424,10 +450,11 @@ class Jet(Particle):
         return instance( pt, eta, phi, mass, btag)
 ##########
 class Top(Particle):
-    def __init__(self, pt, eta, phi, mass=175.):
+    def __init__(self, pt, eta, phi, anti=False, mass=175.):
+        self.anti=anti
         Particle.__init__(self, pt, eta, phi, mass=mass)
     @classmethod
-    def LHEF(instance, TRootLHEFParticle):
+    def LHEF(instance, TRootLHEFParticle, anti=False):
         pt, eta, phi, mass = TRootLHEFParticle.PT, TRootLHEFParticle.Eta, TRootLHEFParticle.Phi , TRootLHEFParticle.M
-        return instance( pt, eta, phi, mass)
+        return instance( pt, eta, phi, anti=False, mass=mass)
 ################################################################################
