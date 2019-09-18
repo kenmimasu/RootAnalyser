@@ -58,10 +58,9 @@ class RAReader(Callable):
                 self.acc[k] = default_acceptance[k]
         
         self.event = Event()
-    @staticmethod
-    def within_acceptance(particle, pt_min, abs_eta_max):
+    def within_acceptance(self, particle, pt_min, abs_eta_max):
         return  ( ( particle.pt > self.acc[pt_min] ) and 
-                  ( abs(particle.eta) < self.acc['abs_eta_max'] ) )
+                  ( abs(particle.eta) < self.acc[abs_eta_max] ) )
     
     def add_MET(self, met, met_phi):
         self.event.MET = met
@@ -173,8 +172,8 @@ class LHEF_reader(RAReader):
         
     def add_neutrino(self, nu):
         self.event.nus.append(nu)
-        self.MET_px += part.Px
-        self.MET_py += part.Py
+        self.MET_px += nu.px
+        self.MET_py += nu.py
         self.event.nnu+=1
     
     def add_top(self, top):
@@ -211,7 +210,7 @@ class LHEF_reader(RAReader):
     def add_MET_from_px_py(self):
         self.event.MET = np.sqrt( self.MET_px**2 + self.MET_py**2 )
         try:
-            self.event.MET_phi = np.arctan2(MET_py,MET_px)
+            self.event.MET_phi = np.arctan2(self.MET_py, self.MET_px)
             if (self.event.MET_phi < 0.0): 
                 self.event.MET_phi += 2.0*np.pi
         except ZeroDivisionError:
