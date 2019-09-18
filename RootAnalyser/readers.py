@@ -68,6 +68,7 @@ class RAReader(Callable):
         if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
         
     def add_photon(self, phot):
+        self.event.visible.append(phot)
         if self.within_acceptance(phot,'pt_gam_min','eta_gam_max'): 
             self.event.photons.append(phot)
             self.event.ht_tot+=phot.pt
@@ -79,24 +80,28 @@ class RAReader(Callable):
         self.event.nlep+=1
         
     def add_electron(self, elec):
+        self.event.visible.append(elec)
         if self.within_acceptance(elec,'pt_ele_min','eta_ele_max'): 
             self.add_lepton(elec)
             self.event.electrons.append(elec)
             self.event.nele+=1
     
     def add_muon(self, muon):
+        self.event.visible.append(muon)
         if self.within_acceptance(muon,'pt_mu_min','eta_mu_max'): 
             self.add_lepton(muon)
             self.event.muons.append(muon)
             self.event.nmu+=1
     
     def add_tau(self, tau):
+        self.event.visible.append(tau)
         if self.within_acceptance(tau,'pt_tau_min','eta_tau_max'): 
             self.taus.append(tau)
             self.ht_tot+=tau.pt
             self.ntau+=1
             
     def add_jet(self, jet):
+        self.event.visible.append(jet)
         if jet.btag: # collect b-tagged jets
             acceptance = self.within_acceptance(jet,'pt_bjet_min','eta_bjet_max')
         else:

@@ -9,6 +9,8 @@ class Event(): # Basic struct
         self.ljets, self.bjets, self.tops = [],[],[]
         self.higgs, self.ws, self.zs = [],[],[]
         self.nus, self.exotics = [], []
+        self.visible = []
+
         # Counters
         self.npho, self.nlep, self.njet = 0, 0, 0
         self.nele, self.nmu, self.ntau =0, 0, 0
