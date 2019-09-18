@@ -56,7 +56,7 @@ def read_tree(TTree, acceptance=None):
     else:
         print 'Only LHCO, LHEF and Delphes structures are implemented!'
         sys.exit()
-    return reader(TTree, acceptance)
+    return reader(TTree, acceptance=acceptance)
 ################################################################################
 def _read_LHCO(tree, acceptance=None):
     '''Read in event ROOT tree of LHCO format imposing acceptance cuts specified by "acceptance"
