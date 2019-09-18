@@ -45,7 +45,325 @@ default_acceptance ={
 }
 # Reader functions for different TTree structures, LHCO and LHEF only.
 ################################################################################
+from collections import Callable
+
+class RAReader(Callable):
+    '''
+    Callable object that returns Event instance.
+    '''
+    def __init__(self, acceptance=None):
+        self.acc = acceptance if acceptance is not None else default_acceptance
+        for k in default_acceptance.keys():
+            if k not in self.acc: 
+                self.acc[k] = default_acceptance[k]
+        
+        self.event = Event()
+    @staticmethod
+    def within_acceptance(particle, pt_min, abs_eta_max):
+        return  ( ( particle.pt > self.acc[pt_min] ) and 
+                  ( abs(particle.eta) < self.acc['abs_eta_max'] ) )
+    
+    def add_MET(self, met, met_phi):
+        self.event.MET = met
+        self.event.MET_phi = met_phi
+        if (evt.MET_phi < 0.0): evt.MET_phi += 2.0*np.pi
+        
+    def add_photon(self, phot):
+        if self.within_acceptance(phot,'pt_gam_min','eta_gam_max'): 
+            self.event.photons.append(phot)
+            self.event.ht_tot+=phot.pt
+            self.event.npho+=1
+    
+    def add_lepton(self, lep):
+        self.event.leptons.append(lep)
+        self.event.ht_tot+=lep.pt
+        self.event.nlep+=1
+        
+    def add_electron(self, elec):
+        if self.within_acceptance(elec,'pt_ele_min','eta_ele_max'): 
+            self.add_lepton(elec)
+            self.event.electrons.append(elec)
+            self.event.nele+=1
+    
+    def add_muon(self, muon):
+        if self.within_acceptance(muon,'pt_mu_min','eta_mu_max'): 
+            self.add_lepton(muon)
+            self.event.muons.append(muon)
+            self.event.nmu+=1
+    
+    def add_tau(self, tau):
+        if self.within_acceptance(tau,'pt_tau_min','eta_tau_max'): 
+            self.taus.append(tau)
+            self.ht_tot+=tau.pt
+            self.ntau+=1
+            
+    def add_jet(self, jet):
+        if jet.btag: # collect b-tagged jets
+            acceptance = self.within_acceptance(jet,'pt_bjet_min','eta_bjet_max')
+        else:
+            acceptance = self.within_acceptance(jet,'pt_jet_min','eta_jet_max')
+
+        if acceptance:
+            self.event.jets.append(jet)
+            self.event.ht_tot+=jet.pt
+            self.event.ht_jet+=jet.pt
+            self.event.ee_jet+=jet.ee
+            self.event.njet+=1
+            if jet.btag: # collect b-tagged jets
+                self.event.bjets.append(jet)
+                self.event.nbjet+=1
+            else: # collect non b-tagged jets
+                self.event.ljets.append(jet)
+                self.event.nljet+=1
+    
+    def read_tree(self):
+        raise NotImplementedError
+        
+    def __call__(self, tree):
+        try:
+            return self.read_tree(tree)
+        except Exception as e:
+            import traceback
+            raise Exception(traceback.format_exc())
+
+class LHCO_reader(RAReader):
+    def read_tree(self, tree):
+        # MET (Sometimes LHCO tree has no attribute MissingET)
+        try:
+            MET = tree.MissingET[0].MET
+            MET_phi = tree.MissingET[0].Phi
+            self.add_MET(MET, MET_phi)
+        except AttributeError:
+            self.add_MET(0., 0.)
+        
+        # Photons
+        for i in xrange(tree.Photon_size):
+            phot = Photon.TRoot(tree.Photon[i])
+            self.add_photon(phot)
+        
+        # Leptons
+        for i in xrange(tree.Electron_size):
+            elec = Electron.TRoot(tree.Electron[i])
+            self.add_electron(elec)
+        
+        for i in xrange(tree.Muon_size):
+            muon = Muon.TRoot(tree.Muon[i])
+            self.add_muon(muon)
+        
+        for i in xrange(tree.Tau_size):
+            tau = Tau.TRoot(tree.Tau[i])
+            self.add_tau(tau)
+            
+        # Jets
+        for i in xrange(tree.Jet_size):
+            jet = Jet.TRoot(tree.Jet[i])
+            self.add_jet(jet)
+        
+        # Empty exotics stuff
+        self.event.exotics=[]
+        self.event.nexo = 0
+        self.event.weight = 1.
+    
+        return self.event
+
+class LHEF_reader(RAReader):
+    def __init__(self, *args, **kwargs):
+        self.MET_px, self.MET_py = 0., 0.
+        super(LHEF_reader, self).__init__(*args, **kwargs)
+        
+    def add_neutrino(self, nu):
+        self.event.nus.append(nu)
+        self.MET_px += part.Px
+        self.MET_py += part.Py
+        self.event.nnu+=1
+    
+    def add_top(self, top):
+        # no acceptance requirements
+        self.event.tops.append(top)
+        self.event.ht_tot+=top.pt
+        self.event.ntop+=1
+    
+    def add_Z(self, zbos):
+        # no acceptance requirements
+        self.event.zs.append(zbos)
+        self.event.ht_tot+=zbos.pt
+        self.event.nz+=1
+    
+    def add_W(self, wbos):
+        # no acceptance requirements
+        self.event.ws.append(wbos)
+        self.event.ht_tot+=wbos.pt
+        self.event.nw+=1
+    
+    def add_Higgs(self, higg):
+        # no acceptance requirements
+        self.event.higgs.append(higg)
+        self.event.ht_tot+=higg.pt
+        self.event.nhiggs+=1
+    
+    def add_exotic(self, exo):
+        # no acceptance requirements
+        self.event.exotics.append(exo)
+        self.event.nexo += 1 
+        self.MET_px += part.Px
+        self.MET_py += part.Py
+    
+    def add_MET_from_px_py(self):
+        self.event.MET = np.sqrt( self.MET_px**2 + self.MET_py**2 )
+        try:
+            self.event.MET_phi = np.arctan2(MET_py,MET_px)
+            if (self.event.MET_phi < 0.0): 
+                self.event.MET_phi += 2.0*np.pi
+        except ZeroDivisionError:
+            self.event.MET_phi = 0.
+                    
+    def read_tree(self, tree):
+        MET_px, MET_py = 0., 0.
+        # select only final state particles
+        self.event.ECM = np.sqrt( (tree.Particle[0].E+tree.Particle[1].E)**2 - 
+                           (tree.Particle[0].Pz+tree.Particle[1].Pz)**2 )
+        final_state = filter(lambda p : p.Status == 1 , tree.Particle)
+        for part in final_state:
+            # Photons
+            if abs(part.PID) == 22:
+                phot = Photon.LHEF(part)
+                self.add_photon(phot)
+                
+            # Charged leptons                   
+            elif abs(part.PID) == 11:
+                elec = Electron.LHEF(part)
+                self.add_electron(elec)
+                
+            elif abs(part.PID) == 13:
+                muon = Muon.LHEF(part)
+                self.add_muon(muon)
+                
+            elif abs(part.PID) == 15:
+                tau = Tau.LHEF(part)
+                self.add_tau(tau)
+                
+            # Neutrinos
+            elif abs(part.PID) in (12,14,16):
+                nu = Particle.LHEF(part)
+                self.add_neutrino(nu)
+                
+            # Jets (quarks & gluons)                 
+            elif abs(part.PID) in (1,2,3,4,5,21):
+                jet = Jet.LHEF(part)
+                self.add_jet(jet)
+                    
+            elif abs(part.PID) == 6:
+                # check if t or tbar
+                anti = True if part.PID==-6 else False
+                top = Top.LHEF(part, anti=anti)
+                self.add_top(top)
+        
+            elif abs(part.PID) == 23:
+                zbos = Particle.LHEF(part)
+                self.add_Z(zbos)
+        
+            elif abs(part.PID) == 24:
+                wbos = Particle.LHEF(part)
+                self.add_W(wbos)
+        
+            elif abs(part.PID) == 25:
+                higg = Particle.LHEF(part)
+                self.add_Higgs(higg)
+                
+            # All other PIDs contribute to MET and put in exotics container
+            else:
+                exo = Particle.LHEF(part)
+                exo.PID = part.PID
+                self.add_exotic(exo)
+       
+        # MET
+        self.add_MET_from_px_py()
+        
+        # Weight
+        try:
+            self.event.weight = tree.Event[0].Weight
+        except AttributeError:
+            self.event.weight = 1.
+    
+        self.event.rwgt = []
+        try:
+            for w in tree.Rwgt:
+                self.event.rwgt.append(w.Weight)
+        except AttributeError:
+            pass
+        
+        return self.event
+
+class Delphes_reader(RAReader):
+    def __init__(self, *args, **kwargs):
+        super(LHEF_reader, self).__init__(*args, **kwargs)
+        
+    def read_tree(self, tree):
+        # MET (Sometimes LHCO tree has no attribute MissingET)
+        # MET (Sometimes LHCO tree has no attribute MissingET)
+        try:
+            MET = tree.MissingET[0].MET
+            MET_phi = tree.MissingET[0].Phi
+            self.add_MET(MET, MET_phi)
+        except AttributeError:
+            self.add_MET(0., 0.)
+            
+        # Photons
+        for i in xrange(tree.Photon_size):
+            phot = Photon.Delphes(tree.Photon[i])
+            self.add_photon(phot)
+            
+        # Leptons
+        for i in xrange(tree.Electron_size):
+            elec = Electron.Delphes(tree.Electron[i])
+            self.add_electron(elec)
+            
+        for i in xrange(tree.Muon_size):
+            muon = Muon.Delphes(tree.Muon[i])
+            self.add_muon(muon)
+        # Jets
+        # check Jet container name
+        try:
+            jet_size, jet_array = tree.KTjet_size, tree.KTjet
+        except AttributeError:
+            jet_size, jet_array = tree.Jet_size, tree.Jet
+    
+        for i in xrange(jet_size):
+            # check Tau tag
+            if not jet_array[i].TauTag:
+                jet = Jet.Delphes(jet_array[i])
+                self.add_jet(jet)
+            else:
+                tau = Tau.Delphes(jet_array[i])
+                self.add_tau(tau)
+    
+        # Empty exotics stuff
+        self.event.exotics=[]
+        self.event.nexo = 0
+        
+        try:
+            self.event.weight = tree.Event[0].Weight
+        except AttributeError:
+            self.event.weight = 1.
+        
+        return self.event
+        
+################################################################################
 def read_tree(TTree, acceptance=None):
+    tree_name = TTree.GetName()
+    if tree_name=='LHCO':
+        reader = LHCO_reader(acceptance=acceptance)
+    elif tree_name=='LHEF':
+        reader = LHEF_reader(acceptance=acceptance)
+    elif tree_name=='Delphes':
+        reader = Delphes_reader(acceptance=acceptance)
+    else:
+        print 'Only LHCO, LHEF and Delphes structures are implemented!'
+        sys.exit()
+        
+    return reader(TTree)
+
+def read_tree_old(TTree, acceptance=None):
     tree_name = TTree.GetName()
     if tree_name=='LHCO':
         reader = _read_LHCO
@@ -57,6 +375,7 @@ def read_tree(TTree, acceptance=None):
         print 'Only LHCO, LHEF and Delphes structures are implemented!'
         sys.exit()
     return reader(TTree, acceptance=acceptance)
+
 ################################################################################
 def _read_LHCO(tree, acceptance=None):
     '''Read in event ROOT tree of LHCO format imposing acceptance cuts specified by "acceptance"
