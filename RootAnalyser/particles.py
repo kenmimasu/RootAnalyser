@@ -287,7 +287,7 @@ class Particle: # Base particle class
         '''boost particle to the rest frame of a (system of) particle(s)'''
         return self.boost(*fourmom(*parts))
         
-    def smeared(self, res, seed=-999.):
+    def smeared(self, res, seed=999):
         '''Smear particle 4 momentum according to a Gaussian of width res.'''
         # determine smearing factor
         
