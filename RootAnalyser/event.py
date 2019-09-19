@@ -24,6 +24,12 @@ class Event(): # Basic struct
     
     def smear_jets(self, smear_function, **kwargs):
         newjets = smear_function(*self.jets, **kwargs)
+
+        try:
+            newjets = list(newjets)
+        except TypeError:
+            newjets = [newjets]
+
         self.jets = newjets
         self.bjets = [j for j in self.jets if j.btag]
         self.ljets = [j for j in self.jets if not j.btag]

@@ -62,8 +62,8 @@ def smear_MET(MET, MET_phi, seed=999):
     while smear_MET_phi < 0.:
         seed+=1
         smear_MET_phi = norm.rvs(loc=1., scale=MET_phi_res, random_state=seed)
-        
-    return MET*smear_MET, MET_phi*smear_MET_phi
+    
+    return MET*smear_MET, np.mod(MET_phi*smear_MET_phi, 2.*np.pi)
 
 def smear_tau_hadr(*particles, **kwargs):
     seed = kwargs.get('seed',None)

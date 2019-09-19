@@ -96,9 +96,9 @@ class RAReader(Callable):
     def add_tau(self, tau):
         self.event.visible.append(tau)
         if self.within_acceptance(tau,'pt_tau_min','eta_tau_max'): 
-            self.taus.append(tau)
-            self.ht_tot+=tau.pt
-            self.ntau+=1
+            self.event.taus.append(tau)
+            self.event.ht_tot+=tau.pt
+            self.event.ntau+=1
             
     def add_jet(self, jet):
         self.event.visible.append(jet)
