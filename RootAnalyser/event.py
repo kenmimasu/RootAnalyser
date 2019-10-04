@@ -31,8 +31,16 @@ class Event(): # Basic struct
             newjets = [newjets]
 
         self.jets = newjets
-        self.bjets = [j for j in self.jets if j.btag]
-        self.ljets = [j for j in self.jets if not j.btag]
+        self.bjets, self.ljets = [], []
+        for j in self.jets:
+            if j.btag:
+                self.bjets.append(j)
+            else:
+                self.ljets.append(j)
+
+        self.nljet = len(self.ljets)
+        self.nbjet = len(self.bjets)
+        
     
     def smear_MET(self, smear_function, **kwargs):
         self.MET, self.MET_phi = smear_function(self.MET, self.MET_phi, **kwargs)
