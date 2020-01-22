@@ -109,7 +109,7 @@ def dphi(*args,**kwargs):# dphi(part1,part2,...,ref_phi=XXX)
     ref_phi = kwargs.get('ref_phi',0.) # look for ref_phi keyword argument, if not use zero
     phi_tot = phi(*args)
     dphi = abs(phi_tot-ref_phi)
-    return dphi if dphi < np.pi else 2.*np.pi-dphi
+    return dphi if dphi < np.pi else 2.*np.pi - dphi
 
 def dphi_0_2pi(*args,**kwargs):# dphi(part1,part2,...,ref_phi=XXX)
     '''Takes a list of particles and returns the azimuthal angle of the 3-momentum of the system optionally w.r.t keyword argument ref_phi'''

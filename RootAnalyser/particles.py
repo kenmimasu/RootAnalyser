@@ -114,7 +114,7 @@ class Particle: # Base particle class
 
     def __init__(self, pt, eta, phi, mass=0., PID=-999.):
         self.pt  = pt # Transverse momentum
-        self.phi = phi if phi > 0 else phi+2.*np.pi # Azimuthal angle
+        self.phi = phi if phi > 0 else phi+2.*np.pi # Azimuthal angle (positive)
         self.mass = mass
         self.PID = PID
         self.eta = eta # Pseudorapidity
@@ -148,7 +148,8 @@ class Particle: # Base particle class
         mass = np.sqrt(ee**2 - modpsq)
         pt = np.sqrt(px**2+py**2)
         eta = np.log( (1. + ct)/(1. - ct) )/2.
-        phi = np.arctan(py/px) if px > 0 else np.arctan(py/px) + np.pi        
+        phi = np.arctan(py/px) if px > 0 else np.arctan(py/px) + np.pi
+        phi = phi if phi > 0 else phi+2.*np.pi 
         return instance(pt, eta, phi, mass)
 
     def set_four_momentum(self, ee=None, px=None, py=None, pz=None):
@@ -193,7 +194,7 @@ class Particle: # Base particle class
         if eta is not None:
             self.eta = eta
         if phi is not None:
-            self.phi = phi
+            self.phi = phi if phi > 0 else phi+2.*np.pi 
         if mass is not None:
             self.mass = mass
         
@@ -219,6 +220,7 @@ class Particle: # Base particle class
                 phi = py/abs(py)*np.pi/2.
         else:
             phi = 0.
+        phi = phi if phi > 0 else phi+2.*np.pi 
         
         return pt, eta, phi
             
@@ -238,7 +240,9 @@ class Particle: # Base particle class
                 self.phi = self.py/abs(self.py)*np.pi/2.
         else:
             self.phi = 0.
-            
+        self.phi = self.phi if self.phi > 0 else self.phi+2.*np.pi 
+        
+        
     def recalc_pt_eta_phi(self):
         self.calc_pt_eta_phi(self.ee, self.px, self.py, self.pz)
 
